@@ -111,7 +111,8 @@ import Layout from '../layouts/Layout.astro';
 			if (auth && state.token) {
 				headers.Authorization = `Bearer ${state.token}`;
 			}
-			const baseUrl = import.meta.env.PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:8080';
+			let baseUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+			baseUrl = baseUrl.replace(/\/+$/, '').replace(/\/+$/, '');
 			const resp = await fetch(`${baseUrl}${endpoint}`, {
 				method,
 				headers,
