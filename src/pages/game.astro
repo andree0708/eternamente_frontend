@@ -482,38 +482,38 @@ import Layout from '../layouts/Layout.astro';
 			margin-bottom: 24px;
 		}
 
-		.memory-card {
+		/* Global styles for dynamically created elements */
+		:global(.memory-card) {
 			aspect-ratio: 1;
 			font-size: 36px;
 			border-radius: 16px;
-			background: linear-gradient(145deg, #f0f4f8, #d9e2ec);
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			border: 3px solid #e2e8f0;
+			border: none !important;
 			cursor: pointer;
 			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 			user-select: none;
-			box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+			box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4) !important;
 		}
 
-		.memory-card:hover:not(:disabled) {
-			transform: translateY(-4px) scale(1.02);
-			box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-			border-color: var(--accent);
+		:global(.memory-card):hover {
+			transform: translateY(-4px) scale(1.05);
+			box-shadow: 0 12px 30px rgba(102, 126, 234, 0.5) !important;
 		}
 
-		.memory-card.revealed {
-			background: linear-gradient(145deg, #fffbeb, #fef3c7);
-			border-color: #fcd34d;
-			animation: flipIn 0.4s ease;
-			box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+		:global(.memory-card.revealed) {
+			background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
 		}
 
-		.memory-card.matched {
-			background: linear-gradient(145deg, #ecfdf5, #d1fae5);
-			border-color: #6ee7b7;
-			box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+		:global(.memory-card.matched) {
+			background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+		}
+
+		@keyframes shimmer {
+			0% { background-position: 200% 200%; }
+			100% { background-position: -200% -200%; }
 		}
 
 		@keyframes flipIn {
