@@ -141,6 +141,11 @@ import Layout from '../layouts/Layout.astro';
 				console.log('Enviando login:', { email });
 				const result = await api('/api/auth/login', 'POST', { email, password }, false);
 				console.log('Login exitoso:', result);
+				
+				if (!result.token) {
+					throw new Error('No se recibió token del servidor');
+				}
+				
 				state.token = result.token;
 				const userData = {
 					id: result.userId,
@@ -151,7 +156,8 @@ import Layout from '../layouts/Layout.astro';
 				localStorage.setItem('eternamente_token', result.token);
 				localStorage.setItem('eternamente_user', JSON.stringify(userData));
 				showMessage('¡Bienvenido! Redirigiendo...', 'success');
-				setTimeout(() => window.location.href = '/game', 800);
+				console.log('Redirigiendo a /game...');
+				window.location.href = '/game';
 			} catch (err) {
 				console.error('Error login:', err);
 				showMessage('Credenciales incorrectas. Intenta de nuevo.', 'error');
@@ -178,6 +184,11 @@ import Layout from '../layouts/Layout.astro';
 					role: 'PATIENT'
 				}, false);
 				console.log('Registro exitoso:', result);
+				
+				if (!result.token) {
+					throw new Error('No se recibió token del servidor');
+				}
+				
 				state.token = result.token;
 				const userData = {
 					id: result.userId,
@@ -188,7 +199,8 @@ import Layout from '../layouts/Layout.astro';
 				localStorage.setItem('eternamente_token', result.token);
 				localStorage.setItem('eternamente_user', JSON.stringify(userData));
 				showMessage('¡Cuenta creada! Redirigiendo...', 'success');
-				setTimeout(() => window.location.href = '/game', 800);
+				console.log('Redirigiendo a /game...');
+				window.location.href = '/game';
 			} catch (err) {
 				console.error('Error registro:', err);
 				showMessage('Error al crear cuenta: ' + err.message, 'error');
