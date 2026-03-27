@@ -127,43 +127,69 @@ import Layout from '../layouts/Layout.astro';
 
 		loginForm.addEventListener('submit', async (e) => {
 			e.preventDefault();
-			const email = document.getElementById('email').value;
+			const email = document.getElementById('email').value.trim();
 			const password = document.getElementById('password').value;
 			
+			if (!email || !password) {
+				showMessage('Por favor, completa todos los campos.', 'error');
+				return;
+			}
+			
 			try {
+				console.log('Enviando login:', { email });
 				const result = await api('/api/auth/login', 'POST', { email, password }, false);
+				console.log('Login exitoso:', result);
 				state.token = result.token;
-				state.user = result.user;
+				const userData = {
+					id: result.userId,
+					email: result.email,
+					fullName: result.fullName
+				};
+				state.user = userData;
 				localStorage.setItem('eternamente_token', result.token);
-				localStorage.setItem('eternamente_user', JSON.stringify(result.user));
+				localStorage.setItem('eternamente_user', JSON.stringify(userData));
 				showMessage('¡Bienvenido! Redirigiendo...', 'success');
 				setTimeout(() => window.location.href = '/game', 800);
 			} catch (err) {
+				console.error('Error login:', err);
 				showMessage('Credenciales incorrectas. Intenta de nuevo.', 'error');
 			}
 		});
 
 		registerForm.addEventListener('submit', async (e) => {
 			e.preventDefault();
-			const email = document.getElementById('regEmail').value;
+			const email = document.getElementById('regEmail').value.trim();
 			const password = document.getElementById('regPassword').value;
-			const fullName = document.getElementById('regName').value;
+			const fullName = document.getElementById('regName').value.trim();
+			
+			if (!email || !password || !fullName) {
+				showMessage('Por favor, completa todos los campos.', 'error');
+				return;
+			}
 			
 			try {
+				console.log('Enviando registro:', { email, fullName });
 				const result = await api('/api/auth/register', 'POST', {
 					email,
 					password,
 					fullName,
 					role: 'PATIENT'
 				}, false);
+				console.log('Registro exitoso:', result);
 				state.token = result.token;
-				state.user = result.user;
+				const userData = {
+					id: result.userId,
+					email: result.email,
+					fullName: result.fullName
+				};
+				state.user = userData;
 				localStorage.setItem('eternamente_token', result.token);
-				localStorage.setItem('eternamente_user', JSON.stringify(result.user));
+				localStorage.setItem('eternamente_user', JSON.stringify(userData));
 				showMessage('¡Cuenta creada! Redirigiendo...', 'success');
 				setTimeout(() => window.location.href = '/game', 800);
 			} catch (err) {
-				showMessage('Error al crear cuenta. El correo ya puede estar registrado.', 'error');
+				console.error('Error registro:', err);
+				showMessage('Error al crear cuenta: ' + err.message, 'error');
 			}
 		});
 	</script>
