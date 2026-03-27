@@ -113,16 +113,21 @@ import Layout from '../layouts/Layout.astro';
 			}
 			let baseUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
 			baseUrl = baseUrl.replace(/\/+$/, '').replace(/\/+$/, '');
-			const resp = await fetch(`${baseUrl}${endpoint}`, {
+			const url = `${baseUrl}${endpoint}`;
+			console.log('API Request:', method, url);
+			console.log('Body:', body);
+			const resp = await fetch(url, {
 				method,
 				headers,
 				body: body ? JSON.stringify(body) : undefined
 			});
+			console.log('Response status:', resp.status);
 			const text = await resp.text();
+			console.log('Response text:', text);
 			let json;
 			try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
 			if (!resp.ok) {
-				throw new Error(json.message || json.raw || 'Error');
+				throw new Error(json.message || json.raw || `Error ${resp.status}`);
 			}
 			return json;
 		}
