@@ -105,7 +105,8 @@ import Layout from '../layouts/Layout.astro';
 			openIndexes: [],
 			lockBoard: false,
 			cards: [],
-			difficulty: 'EASY'
+			difficulty: 'EASY',
+			loadingAnalysis: false
 		};
 
 		if (!state.token || !state.user) {
@@ -167,6 +168,15 @@ import Layout from '../layouts/Layout.astro';
 			const msg = document.getElementById('gameMessage');
 			msg.textContent = text;
 			msg.className = `game-message ${type}`;
+		}
+
+		function escapeHtml(text) {
+			return String(text)
+				.replace(/&/g, '&amp;')
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/"/g, '&quot;')
+				.replace(/'/g, '&#039;');
 		}
 
 		function newGame() {
@@ -261,6 +271,10 @@ import Layout from '../layouts/Layout.astro';
 				? state.revealDurations.reduce((a, b) => a + b, 0) / state.revealDurations.length 
 				: 0;
 
+			// Ajustamos el payload de `metrics` para que el backend pueda calcular un riesgo "entendible".
+			// El rule-based MlAnalysisService usa `accuracy` y `reactionTimeMs` (con fallback a otras keys).
+			const accuracy = state.totalPairs > 0 ? state.matchedPairs / state.totalPairs : 0; // 0..1
+
 			const metrics = {
 				difficulty: state.difficulty,
 				totalPairs: state.totalPairs,
@@ -269,6 +283,8 @@ import Layout from '../layouts/Layout.astro';
 				mismatches: state.mismatches,
 				durationSeconds: Number(durationSeconds.toFixed(2)),
 				averageRevealMs: Number(avgReveal.toFixed(2)),
+				accuracy: Number(accuracy.toFixed(4)),
+				reactionTimeMs: Number(avgReveal.toFixed(2)),
 				hintsUsed: 0
 			};
 
@@ -281,11 +297,26 @@ import Layout from '../layouts/Layout.astro';
 		});
 
 		document.getElementById('viewResultsBtn').addEventListener('click', async () => {
+			if (state.loadingAnalysis) return;
+			const viewBtn = document.getElementById('viewResultsBtn');
+			state.loadingAnalysis = true;
+			viewBtn.disabled = true;
+			viewBtn.textContent = 'Generando análisis...';
 			try {
 				const assessments = await api('/api/assessments', 'GET');
+				assessments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 				const content = document.getElementById('resultsContent');
 				if (assessments && assessments.length > 0) {
 					const latest = assessments[0];
+					let analysisText = 'No se pudo obtener analisis detallado.';
+					try {
+						const detailed = await api(`/api/assessments/${latest.id}/analysis`, 'GET');
+						if (detailed && detailed.analysis) {
+							analysisText = detailed.analysis;
+						}
+					} catch (analysisErr) {
+						console.warn('No se pudo cargar analisis detallado:', analysisErr);
+					}
 					content.innerHTML = `
 						<div class="result-item">
 							<span class="result-label">Puntuación de Riesgo</span>
@@ -299,12 +330,28 @@ import Layout from '../layouts/Layout.astro';
 							<span class="result-label">Fecha</span>
 							<span class="result-value">${new Date(latest.createdAt).toLocaleDateString()}</span>
 						</div>
+						<div class="analysis-box">
+							<h3>Análisis completo (Ollama - gemma3:4b)</h3>
+							<p>${escapeHtml(analysisText).replace(/\n/g, '<br/>')}</p>
+						</div>
 					`;
 				} else {
 					content.innerHTML = '<p class="no-results">No hay evaluaciones registradas</p>';
 				}
 			} catch (err) {
 				showMessage('Error al cargar resultados: ' + err.message, 'error');
+			} finally {
+				state.loadingAnalysis = false;
+				viewBtn.disabled = false;
+				viewBtn.innerHTML = `
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+						<polyline points="14 2 14 8 20 8"/>
+						<line x1="16" y1="13" x2="8" y2="13"/>
+						<line x1="16" y1="17" x2="8" y2="17"/>
+					</svg>
+					Ver Análisis Completo
+				`;
 			}
 		});
 
@@ -598,6 +645,27 @@ import Layout from '../layouts/Layout.astro';
 			text-align: center;
 			color: var(--text-muted);
 			padding: 24px;
+		}
+
+		.analysis-box {
+			margin-top: 8px;
+			padding: 14px;
+			background: #f8fafc;
+			border: 1px solid #e2e8f0;
+			border-radius: var(--radius-sm);
+		}
+
+		.analysis-box h3 {
+			font-size: 14px;
+			margin: 0 0 8px 0;
+			color: var(--primary);
+		}
+
+		.analysis-box p {
+			margin: 0;
+			font-size: 13px;
+			color: #334155;
+			line-height: 1.5;
 		}
 	</style>
 </Layout>
