@@ -1,0 +1,584 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="EternaMente - Juego de Memoria">
+	<div class="game-container">
+		<header class="game-header">
+			<div class="user-info">
+				<div class="user-avatar">
+					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<circle cx="12" cy="8" r="4"/>
+						<path d="M4 20c0-4 4-6 8-6s8 2 8 6"/>
+					</svg>
+				</div>
+				<span id="userName">Usuario</span>
+			</div>
+			<button id="logoutBtn" class="btn-logout">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+				</svg>
+				Salir
+			</button>
+		</header>
+
+		<main class="game-main">
+			<div class="game-card fade-in">
+				<div class="game-title">
+					<h1>Memoria de Pares</h1>
+					<p>Encuentra todos los pares de tarjetas</p>
+				</div>
+
+				<div class="game-stats">
+					<div class="stat-item">
+						<span class="stat-label">Movimientos</span>
+						<span class="stat-value" id="moves">0</span>
+					</div>
+					<div class="stat-item">
+						<span class="stat-label">Errores</span>
+						<span class="stat-value" id="mismatches">0</span>
+					</div>
+					<div class="stat-item">
+						<span class="stat-label">Pares</span>
+						<span class="stat-value"><span id="matched">0</span>/<span id="totalPairs">6</span></span>
+					</div>
+				</div>
+
+				<div class="difficulty-selector">
+					<label>Dificultad</label>
+					<div class="difficulty-buttons">
+						<button class="diff-btn active" data-diff="EASY">Fácil</button>
+						<button class="diff-btn" data-diff="MEDIUM">Medio</button>
+						<button class="diff-btn" data-diff="HARD">Difícil</button>
+					</div>
+				</div>
+
+				<div id="board" class="game-board"></div>
+
+				<div class="game-actions">
+					<button id="newGameBtn" class="btn btn-primary">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M23 4v6h-6M1 20v-6h6"/>
+							<path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+						</svg>
+						Nueva Partida
+					</button>
+					<button id="saveBtn" class="btn btn-accent" disabled>
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+							<polyline points="17 21 17 13 7 13 7 21"/>
+							<polyline points="7 3 7 8 15 8"/>
+						</svg>
+						Guardar Resultados
+					</button>
+				</div>
+
+				<div id="gameMessage" class="game-message"></div>
+			</div>
+
+			<div class="results-card fade-in" style="animation-delay: 0.2s;">
+				<h2>Resultados de Evaluación</h2>
+				<button id="viewResultsBtn" class="btn btn-outline btn-full">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+						<polyline points="14 2 14 8 20 8"/>
+						<line x1="16" y1="13" x2="8" y2="13"/>
+						<line x1="16" y1="17" x2="8" y2="17"/>
+					</svg>
+					Ver Análisis Completo
+				</button>
+				<div id="resultsContent" class="results-content"></div>
+			</div>
+		</main>
+	</div>
+
+	<script>
+		const state = {
+			token: localStorage.getItem('eternamente_token') || '',
+			user: JSON.parse(localStorage.getItem('eternamente_user') || 'null'),
+			startAt: null,
+			moves: 0,
+			mismatches: 0,
+			matchedPairs: 0,
+			totalPairs: 6,
+			revealDurations: [],
+			openIndexes: [],
+			lockBoard: false,
+			cards: [],
+			difficulty: 'EASY'
+		};
+
+		if (!state.token || !state.user) {
+			window.location.href = '/';
+		}
+
+		document.getElementById('userName').textContent = state.user.fullName || state.user.email;
+
+		document.getElementById('logoutBtn').addEventListener('click', () => {
+			localStorage.removeItem('eternamente_token');
+			localStorage.removeItem('eternamente_user');
+			window.location.href = '/';
+		});
+
+		const symbols = ['★', '♥', '♦', '♣', '♠', '✿', '☀', '☁'];
+		
+		function shuffle(arr) {
+			const copy = [...arr];
+			for (let i = copy.length - 1; i > 0; i--) {
+				const j = Math.floor(Math.random() * (i + 1));
+				[copy[i], copy[j]] = [copy[j], copy[i]];
+			}
+			return copy;
+		}
+
+		function createDeck() {
+			const numPairs = state.totalPairs;
+			const selectedSymbols = symbols.slice(0, numPairs);
+			const pairs = [...selectedSymbols, ...selectedSymbols];
+			return shuffle(pairs).map((symbol, idx) => ({
+				id: idx,
+				symbol,
+				revealed: false,
+				matched: false,
+				openedAt: null
+			}));
+		}
+
+		function renderBoard() {
+			const board = document.getElementById('board');
+			board.innerHTML = '';
+			state.cards.forEach((card, index) => {
+				const btn = document.createElement('button');
+				btn.className = `memory-card ${card.revealed ? 'revealed' : ''} ${card.matched ? 'matched' : ''}`;
+				btn.innerHTML = card.revealed || card.matched ? card.symbol : '?';
+				btn.disabled = state.lockBoard || card.revealed || card.matched;
+				btn.addEventListener('click', () => flipCard(index));
+				board.appendChild(btn);
+			});
+		}
+
+		function updateMetrics() {
+			document.getElementById('moves').textContent = state.moves;
+			document.getElementById('mismatches').textContent = state.mismatches;
+			document.getElementById('matched').textContent = state.matchedPairs;
+		}
+
+		function showMessage(text, type = 'info') {
+			const msg = document.getElementById('gameMessage');
+			msg.textContent = text;
+			msg.className = `game-message ${type}`;
+		}
+
+		function newGame() {
+			state.startAt = performance.now();
+			state.moves = 0;
+			state.mismatches = 0;
+			state.matchedPairs = 0;
+			state.revealDurations = [];
+			state.openIndexes = [];
+			state.lockBoard = false;
+			state.cards = createDeck();
+			document.getElementById('saveBtn').disabled = true;
+			updateMetrics();
+			renderBoard();
+			showMessage('Partida iniciada. ¡Encuentra los pares!');
+		}
+
+		function flipCard(index) {
+			if (state.lockBoard) return;
+			const card = state.cards[index];
+			if (!card || card.revealed || card.matched) return;
+
+			card.revealed = true;
+			card.openedAt = performance.now();
+			state.openIndexes.push(index);
+			renderBoard();
+
+			if (state.openIndexes.length < 2) return;
+
+			const [firstIdx, secondIdx] = state.openIndexes;
+			const first = state.cards[firstIdx];
+			const second = state.cards[secondIdx];
+			state.moves += 1;
+
+			const reactionA = first.openedAt - (state.startAt || first.openedAt);
+			const reactionB = second.openedAt - (state.startAt || second.openedAt);
+			state.revealDurations.push(reactionA, reactionB);
+
+			if (first.symbol === second.symbol) {
+				first.matched = true;
+				second.matched = true;
+				state.matchedPairs += 1;
+				state.openIndexes = [];
+				updateMetrics();
+				renderBoard();
+				if (state.matchedPairs === state.totalPairs) {
+					document.getElementById('saveBtn').disabled = false;
+					showMessage('¡Completado! Puedes guardar los resultados.', 'success');
+				}
+				return;
+			}
+
+			state.mismatches += 1;
+			state.lockBoard = true;
+			updateMetrics();
+			setTimeout(() => {
+				first.revealed = false;
+				second.revealed = false;
+				state.openIndexes = [];
+				state.lockBoard = false;
+				renderBoard();
+			}, 800);
+		}
+
+		async function api(endpoint, method, body) {
+			const headers = { 'Content-Type': 'application/json' };
+			if (state.token) {
+				headers.Authorization = `Bearer ${state.token}`;
+			}
+			const resp = await fetch(`http://localhost:8080${endpoint}`, {
+				method,
+				headers,
+				body: body ? JSON.stringify(body) : undefined
+			});
+			const text = await resp.text();
+			let json;
+			try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
+			if (!resp.ok) {
+				throw new Error(json.message || json.raw || 'Error');
+			}
+			return json;
+		}
+
+		document.getElementById('newGameBtn').addEventListener('click', newGame);
+
+		document.getElementById('saveBtn').addEventListener('click', async () => {
+			const endAt = performance.now();
+			const durationSeconds = (endAt - (state.startAt || endAt)) / 1000;
+			const avgReveal = state.revealDurations.length 
+				? state.revealDurations.reduce((a, b) => a + b, 0) / state.revealDurations.length 
+				: 0;
+
+			const metrics = {
+				difficulty: state.difficulty,
+				totalPairs: state.totalPairs,
+				matchedPairs: state.matchedPairs,
+				moves: state.moves,
+				mismatches: state.mismatches,
+				durationSeconds: Number(durationSeconds.toFixed(2)),
+				averageRevealMs: Number(avgReveal.toFixed(2)),
+				hintsUsed: 0
+			};
+
+			try {
+				await api('/api/assessments', 'POST', { age: 65, metrics });
+				showMessage('Resultados guardados correctamente', 'success');
+			} catch (err) {
+				showMessage('Error al guardar: ' + err.message, 'error');
+			}
+		});
+
+		document.getElementById('viewResultsBtn').addEventListener('click', async () => {
+			try {
+				const assessments = await api('/api/assessments', 'GET');
+				const content = document.getElementById('resultsContent');
+				if (assessments && assessments.length > 0) {
+					const latest = assessments[0];
+					content.innerHTML = `
+						<div class="result-item">
+							<span class="result-label">Puntuación de Riesgo</span>
+							<span class="result-value">${(latest.riskScore * 100).toFixed(1)}%</span>
+						</div>
+						<div class="result-item">
+							<span class="result-label">Predicción DCL</span>
+							<span class="result-value ${latest.predictedDcl ? 'risk' : 'normal'}">${latest.predictedDcl ? 'Riesgo detectado' : 'Normal'}</span>
+						</div>
+						<div class="result-item">
+							<span class="result-label">Fecha</span>
+							<span class="result-value">${new Date(latest.createdAt).toLocaleDateString()}</span>
+						</div>
+					`;
+				} else {
+					content.innerHTML = '<p class="no-results">No hay evaluaciones registradas</p>';
+				}
+			} catch (err) {
+				showMessage('Error al cargar resultados: ' + err.message, 'error');
+			}
+		});
+
+		document.querySelectorAll('.diff-btn').forEach(btn => {
+			btn.addEventListener('click', () => {
+				document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+				btn.classList.add('active');
+				state.difficulty = btn.dataset.diff;
+				state.totalPairs = state.difficulty === 'EASY' ? 6 : state.difficulty === 'MEDIUM' ? 8 : 12;
+				document.getElementById('totalPairs').textContent = state.totalPairs;
+				newGame();
+			});
+		});
+
+		newGame();
+	</script>
+
+	<style>
+		.game-container {
+			min-height: 100vh;
+			background: linear-gradient(135deg, #FAF8F5 0%, #F5F0E8 100%);
+		}
+
+		.game-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 16px 24px;
+			background: white;
+			box-shadow: var(--shadow-sm);
+		}
+
+		.user-info {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+		}
+
+		.user-avatar {
+			width: 40px;
+			height: 40px;
+			border-radius: 50%;
+			background: var(--accent);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			color: white;
+		}
+
+		.btn-logout {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			padding: 8px 16px;
+			background: transparent;
+			border: 1px solid var(--border);
+			border-radius: var(--radius-sm);
+			color: var(--text-muted);
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+
+		.btn-logout:hover {
+			background: var(--error);
+			color: white;
+			border-color: var(--error);
+		}
+
+		.game-main {
+			max-width: 900px;
+			margin: 0 auto;
+			padding: 32px 24px;
+			display: grid;
+			gap: 24px;
+		}
+
+		.game-card, .results-card {
+			background: white;
+			border-radius: var(--radius-lg);
+			box-shadow: var(--shadow-lg);
+			padding: 32px;
+		}
+
+		.game-title {
+			text-align: center;
+			margin-bottom: 24px;
+		}
+
+		.game-title h1 {
+			font-family: var(--font-display);
+			font-size: 28px;
+			color: var(--primary);
+			margin-bottom: 4px;
+		}
+
+		.game-title p {
+			color: var(--text-muted);
+			font-size: 14px;
+		}
+
+		.game-stats {
+			display: flex;
+			justify-content: center;
+			gap: 32px;
+			margin-bottom: 24px;
+		}
+
+		.stat-item {
+			text-align: center;
+		}
+
+		.stat-label {
+			display: block;
+			font-size: 12px;
+			color: var(--text-muted);
+			text-transform: uppercase;
+			margin-bottom: 4px;
+		}
+
+		.stat-value {
+			font-size: 24px;
+			font-weight: 600;
+			color: var(--primary);
+		}
+
+		.difficulty-selector {
+			text-align: center;
+			margin-bottom: 24px;
+		}
+
+		.difficulty-selector label {
+			display: block;
+			font-size: 13px;
+			color: var(--text-muted);
+			margin-bottom: 8px;
+		}
+
+		.difficulty-buttons {
+			display: flex;
+			justify-content: center;
+			gap: 8px;
+		}
+
+		.diff-btn {
+			padding: 8px 20px;
+			border: 2px solid var(--border);
+			background: white;
+			border-radius: var(--radius-sm);
+			font-size: 13px;
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+
+		.diff-btn.active {
+			background: var(--accent);
+			color: white;
+			border-color: var(--accent);
+		}
+
+		.game-board {
+			display: grid;
+			grid-template-columns: repeat(6, 1fr);
+			gap: 12px;
+			margin-bottom: 24px;
+		}
+
+		.memory-card {
+			aspect-ratio: 1;
+			font-size: 32px;
+			border-radius: var(--radius-md);
+			background: linear-gradient(135deg, #E2E8F0 0%, #CBD5E1 100%);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			border: none;
+			cursor: pointer;
+			transition: all 0.3s ease;
+			user-select: none;
+		}
+
+		.memory-card:hover:not(:disabled) {
+			transform: scale(1.05);
+			box-shadow: var(--shadow-md);
+		}
+
+		.memory-card.revealed {
+			background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+			animation: flipIn 0.3s ease;
+		}
+
+		.memory-card.matched {
+			background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);
+		}
+
+		@keyframes flipIn {
+			from { transform: rotateY(90deg); }
+			to { transform: rotateY(0); }
+		}
+
+		.game-actions {
+			display: flex;
+			justify-content: center;
+			gap: 16px;
+		}
+
+		.game-message {
+			text-align: center;
+			padding: 12px;
+			margin-top: 16px;
+			border-radius: var(--radius-sm);
+			font-size: 14px;
+		}
+
+		.game-message.info {
+			background: var(--bg-cream);
+			color: var(--text-muted);
+		}
+
+		.game-message.success {
+			background: rgba(56, 161, 105, 0.1);
+			color: var(--success);
+		}
+
+		.game-message.error {
+			background: rgba(229, 62, 62, 0.1);
+			color: var(--error);
+		}
+
+		.results-card h2 {
+			font-family: var(--font-display);
+			font-size: 20px;
+			color: var(--primary);
+			margin-bottom: 16px;
+		}
+
+		.btn-full {
+			width: 100%;
+			margin-bottom: 16px;
+		}
+
+		.results-content {
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+		}
+
+		.result-item {
+			display: flex;
+			justify-content: space-between;
+			padding: 12px;
+			background: var(--bg-cream);
+			border-radius: var(--radius-sm);
+		}
+
+		.result-label {
+			color: var(--text-muted);
+			font-size: 14px;
+		}
+
+		.result-value {
+			font-weight: 600;
+			color: var(--primary);
+		}
+
+		.result-value.risk {
+			color: var(--error);
+		}
+
+		.result-value.normal {
+			color: var(--success);
+		}
+
+		.no-results {
+			text-align: center;
+			color: var(--text-muted);
+			padding: 24px;
+		}
+	</style>
+</Layout>

@@ -1,399 +1,319 @@
 ---
-
+import Layout from '../layouts/Layout.astro';
 ---
 
-<html lang="es">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>EternaMente Frontend</title>
-		<style>
-			:root {
-				font-family: Arial, sans-serif;
-				color: #1f2937;
-				background: #f5f7fb;
-			}
-			body {
-				margin: 0;
-				padding: 24px;
-			}
-			.container {
-				max-width: 920px;
-				margin: 0 auto;
-				display: grid;
-				gap: 20px;
-			}
-			.card {
-				background: #fff;
-				border-radius: 12px;
-				padding: 16px;
-				box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-			}
-			h1, h2 {
-				margin-top: 0;
-			}
-			.row {
-				display: grid;
-				gap: 8px;
-				margin-bottom: 10px;
-			}
-			input, select, button {
-				padding: 10px;
-				border-radius: 8px;
-				border: 1px solid #cbd5e1;
-				font-size: 14px;
-			}
-			button {
-				cursor: pointer;
-				background: #2563eb;
-				color: #fff;
-				border: none;
-			}
-			button:disabled {
-				opacity: 0.6;
-				cursor: not-allowed;
-			}
-			.status {
-				font-size: 14px;
-				padding: 8px;
-				background: #eef2ff;
-				border-radius: 8px;
-				word-break: break-word;
-			}
-			.grid {
-				display: grid;
-				grid-template-columns: repeat(4, minmax(0, 1fr));
-				gap: 8px;
-			}
-			.memory-card {
-				aspect-ratio: 1;
-				font-size: 28px;
-				border-radius: 8px;
-				background: #e2e8f0;
-				display: grid;
-				place-items: center;
-				border: 1px solid #94a3b8;
-				user-select: none;
-			}
-			.memory-card.revealed,
-			.memory-card.matched {
-				background: #dbeafe;
-			}
-			.memory-card.matched {
-				background: #bbf7d0;
-			}
-			.metrics {
-				display: grid;
-				grid-template-columns: repeat(3, minmax(0, 1fr));
-				gap: 8px;
-				font-size: 14px;
-			}
-			pre {
-				white-space: pre-wrap;
-				word-break: break-word;
-				background: #0f172a;
-				color: #e2e8f0;
-				padding: 12px;
-				border-radius: 8px;
-				font-size: 12px;
-			}
-		</style>
-	</head>
-	<body>
-		<div class="container">
-			<section class="card">
-				<h1>EternaMente - Login</h1>
-				<div class="row">
-					<label for="backendUrl">Backend URL</label>
-					<input id="backendUrl" value="http://localhost:8080" />
+<Layout title="EternaMente - Iniciar Sesión">
+	<div class="auth-container">
+		<div class="auth-background">
+			<div class="bg-pattern"></div>
+			<div class="bg-gradient"></div>
+		</div>
+		
+		<div class="auth-card fade-in">
+			<div class="brand">
+				<div class="logo">
+					<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<circle cx="24" cy="24" r="22" stroke="#B8860B" stroke-width="3"/>
+						<path d="M24 12C24 12 16 18 16 24C16 30 24 36 24 36C24 36 32 30 32 24C32 18 24 12 24 12Z" fill="#B8860B"/>
+						<circle cx="24" cy="24" r="6" fill="#FAF8F5"/>
+					</svg>
 				</div>
-				<div class="row">
-					<label for="email">Email</label>
-					<input id="email" value="demo@eternamente.com" />
-				</div>
-				<div class="row">
-					<label for="password">Password</label>
-					<input id="password" type="password" value="lucas1234" />
-				</div>
-				<div style="display:flex; gap:8px; flex-wrap:wrap;">
-					<button id="registerBtn" type="button">Registrar</button>
-					<button id="loginBtn" type="button">Login</button>
-					<button id="meBtn" type="button">Ver /api/users/me</button>
-				</div>
-				<p id="authStatus" class="status">Sin autenticar</p>
-			</section>
+				<h1 class="title">EternaMente</h1>
+				<p class="subtitle">Evaluación Cognitiva</p>
+			</div>
 
-			<section class="card">
-				<h2>Juego: Memoria de Pares (6 pares)</h2>
-				<div class="row">
-					<label for="difficulty">Dificultad</label>
-					<select id="difficulty">
-						<option value="EASY">EASY</option>
-						<option value="MEDIUM">MEDIUM</option>
-						<option value="HARD">HARD</option>
-					</select>
+			<div class="tabs">
+				<button class="tab-btn active" data-tab="login">Iniciar Sesión</button>
+				<button class="tab-btn" data-tab="register">Registrarse</button>
+			</div>
+
+			<form id="loginForm" class="auth-form">
+				<div class="form-group">
+					<label for="email">Correo Electrónico</label>
+					<input type="email" id="email" class="input" placeholder="tu@email.com" required />
 				</div>
-				<button id="newGameBtn" type="button">Nueva partida</button>
-				<div class="metrics" style="margin-top:12px;">
-					<div>Movimientos: <strong id="moves">0</strong></div>
-					<div>Errores: <strong id="mismatches">0</strong></div>
-					<div>Pares: <strong id="matched">0</strong>/<strong id="totalPairs">6</strong></div>
+				<div class="form-group">
+					<label for="password">Contraseña</label>
+					<input type="password" id="password" class="input" placeholder="••••••••" required />
 				</div>
-				<div style="margin-top:12px;" id="board" class="grid"></div>
-				<div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
-					<button id="saveSessionBtn" type="button" disabled>Guardar partida en backend</button>
-					<button id="analysisBtn" type="button">Ver análisis</button>
+				<button type="submit" class="btn btn-accent btn-full">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>
+					</svg>
+					Entrar
+				</button>
+			</form>
+
+			<form id="registerForm" class="auth-form hidden">
+				<div class="form-group">
+					<label for="regEmail">Correo Electrónico</label>
+					<input type="email" id="regEmail" class="input" placeholder="tu@email.com" required />
 				</div>
-				<p id="gameStatus" class="status">Inicia una partida para comenzar.</p>
-				<pre id="apiOutput">Sin respuestas aún.</pre>
-			</section>
+				<div class="form-group">
+					<label for="regPassword">Contraseña</label>
+					<input type="password" id="regPassword" class="input" placeholder="••••••••" required />
+				</div>
+				<div class="form-group">
+					<label for="regName">Nombre Completo</label>
+					<input type="text" id="regName" class="input" placeholder="Tu nombre" required />
+				</div>
+				<button type="submit" class="btn btn-primary btn-full">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+						<circle cx="8.5" cy="7" r="4"/>
+						<path d="M20 8v6M23 11h-6"/>
+					</svg>
+					Crear Cuenta
+				</button>
+			</form>
+
+			<div id="authMessage" class="auth-message hidden"></div>
 		</div>
 
-		<script>
-			const state = {
-				token: "",
-				startAt: null,
-				moves: 0,
-				mismatches: 0,
-				matchedPairs: 0,
-				totalPairs: 6,
-				revealDurations: [],
-				openIndexes: [],
-				lockBoard: false,
-				cards: []
-			};
+		<footer class="auth-footer">
+			<p>Sistema de evaluación cognitiva para el adulto mayor</p>
+		</footer>
+	</div>
 
-			const symbols = ["A", "B", "C", "D", "E", "F"];
-			const ui = {
-				backendUrl: document.getElementById("backendUrl"),
-				email: document.getElementById("email"),
-				password: document.getElementById("password"),
-				authStatus: document.getElementById("authStatus"),
-				gameStatus: document.getElementById("gameStatus"),
-				apiOutput: document.getElementById("apiOutput"),
-				moves: document.getElementById("moves"),
-				mismatches: document.getElementById("mismatches"),
-				matched: document.getElementById("matched"),
-				board: document.getElementById("board"),
-				difficulty: document.getElementById("difficulty"),
-				saveSessionBtn: document.getElementById("saveSessionBtn")
-			};
+	<script>
+		const state = {
+			token: localStorage.getItem('eternamente_token') || '',
+			user: JSON.parse(localStorage.getItem('eternamente_user') || 'null')
+		};
 
-			function setAuthStatus(text) {
-				ui.authStatus.textContent = text;
-			}
+		if (state.token && state.user) {
+			window.location.href = '/game';
+		}
 
-			function setGameStatus(text) {
-				ui.gameStatus.textContent = text;
-			}
+		const tabs = document.querySelectorAll('.tab-btn');
+		const loginForm = document.getElementById('loginForm');
+		const registerForm = document.getElementById('registerForm');
+		const authMessage = document.getElementById('authMessage');
 
-			function updateMetrics() {
-				ui.moves.textContent = String(state.moves);
-				ui.mismatches.textContent = String(state.mismatches);
-				ui.matched.textContent = String(state.matchedPairs);
-			}
-
-			function shuffle(arr) {
-				const copy = [...arr];
-				for (let i = copy.length - 1; i > 0; i--) {
-					const j = Math.floor(Math.random() * (i + 1));
-					[copy[i], copy[j]] = [copy[j], copy[i]];
-				}
-				return copy;
-			}
-
-			function createDeck() {
-				const pairs = [...symbols, ...symbols];
-				return shuffle(pairs).map((symbol, idx) => ({
-					id: idx,
-					symbol,
-					revealed: false,
-					matched: false,
-					openedAt: null
-				}));
-			}
-
-			function renderBoard() {
-				ui.board.innerHTML = "";
-				state.cards.forEach((card, index) => {
-					const btn = document.createElement("button");
-					btn.type = "button";
-					btn.className = `memory-card ${card.revealed ? "revealed" : ""} ${card.matched ? "matched" : ""}`;
-					btn.textContent = card.revealed || card.matched ? card.symbol : "?";
-					btn.disabled = state.lockBoard || card.revealed || card.matched;
-					btn.addEventListener("click", () => flipCard(index));
-					ui.board.appendChild(btn);
-				});
-			}
-
-			function newGame() {
-				state.startAt = performance.now();
-				state.moves = 0;
-				state.mismatches = 0;
-				state.matchedPairs = 0;
-				state.revealDurations = [];
-				state.openIndexes = [];
-				state.lockBoard = false;
-				state.cards = createDeck();
-				ui.saveSessionBtn.disabled = true;
-				updateMetrics();
-				renderBoard();
-				setGameStatus("Partida iniciada.");
-			}
-
-			function flipCard(index) {
-				if (state.lockBoard) return;
-				const card = state.cards[index];
-				if (!card || card.revealed || card.matched) return;
-
-				card.revealed = true;
-				card.openedAt = performance.now();
-				state.openIndexes.push(index);
-				renderBoard();
-
-				if (state.openIndexes.length < 2) return;
-
-				const [firstIdx, secondIdx] = state.openIndexes;
-				const first = state.cards[firstIdx];
-				const second = state.cards[secondIdx];
-				state.moves += 1;
-
-				const reactionA = first.openedAt - (state.startAt || first.openedAt);
-				const reactionB = second.openedAt - (state.startAt || second.openedAt);
-				state.revealDurations.push(reactionA, reactionB);
-
-				if (first.symbol === second.symbol) {
-					first.matched = true;
-					second.matched = true;
-					state.matchedPairs += 1;
-					state.openIndexes = [];
-					updateMetrics();
-					renderBoard();
-					if (state.matchedPairs === state.totalPairs) {
-						ui.saveSessionBtn.disabled = false;
-						setGameStatus("Completado. Puedes guardar la sesión.");
-					}
-					return;
-				}
-
-				state.mismatches += 1;
-				state.lockBoard = true;
-				updateMetrics();
-				setTimeout(() => {
-					first.revealed = false;
-					second.revealed = false;
-					state.openIndexes = [];
-					state.lockBoard = false;
-					renderBoard();
-				}, 700);
-			}
-
-			function average(values) {
-				if (!values.length) return 0;
-				const sum = values.reduce((acc, v) => acc + v, 0);
-				return sum / values.length;
-			}
-
-			function getApiBase() {
-				return ui.backendUrl.value.trim().replace(/\/$/, "");
-			}
-
-			async function api(path, method, body, auth = true) {
-				const headers = { "Content-Type": "application/json" };
-				if (auth && state.token) {
-					headers.Authorization = `Bearer ${state.token}`;
-				}
-				const resp = await fetch(`${getApiBase()}${path}`, {
-					method,
-					headers,
-					body: body ? JSON.stringify(body) : undefined
-				});
-				const text = await resp.text();
-				let json;
-				try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
-				if (!resp.ok) {
-					throw new Error(`${resp.status} ${JSON.stringify(json)}`);
-				}
-				return json;
-			}
-
-			document.getElementById("registerBtn").addEventListener("click", async () => {
-				try {
-					const result = await api("/api/auth/register", "POST", {
-						email: ui.email.value.trim(),
-						password: ui.password.value,
-						role: "PATIENT",
-						fullName: "Usuario Frontend"
-					}, false);
-					state.token = result.token || "";
-					setAuthStatus("Registro exitoso. Token cargado.");
-					ui.apiOutput.textContent = JSON.stringify(result, null, 2);
-				} catch (e) {
-					setAuthStatus(`Error register: ${String(e.message)}`);
-				}
+		tabs.forEach(tab => {
+			tab.addEventListener('click', () => {
+				tabs.forEach(t => t.classList.remove('active'));
+				tab.classList.add('active');
+				
+				const isLogin = tab.dataset.tab === 'login';
+				loginForm.classList.toggle('hidden', !isLogin);
+				registerForm.classList.toggle('hidden', isLogin);
 			});
+		});
 
-			document.getElementById("loginBtn").addEventListener("click", async () => {
-				try {
-					const result = await api("/api/auth/login", "POST", {
-						email: ui.email.value.trim(),
-						password: ui.password.value
-					}, false);
-					state.token = result.token || "";
-					setAuthStatus("Login correcto. Token cargado.");
-					ui.apiOutput.textContent = JSON.stringify(result, null, 2);
-				} catch (e) {
-					setAuthStatus(`Error login: ${String(e.message)}`);
-				}
+		function showMessage(text, type) {
+			authMessage.textContent = text;
+			authMessage.className = `auth-message ${type}`;
+		}
+
+		async function api(endpoint, method, body, auth = false) {
+			const headers = { 'Content-Type': 'application/json' };
+			if (auth && state.token) {
+				headers.Authorization = `Bearer ${state.token}`;
+			}
+			const resp = await fetch(`http://localhost:8080${endpoint}`, {
+				method,
+				headers,
+				body: body ? JSON.stringify(body) : undefined
 			});
+			const text = await resp.text();
+			let json;
+			try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
+			if (!resp.ok) {
+				throw new Error(json.message || json.raw || 'Error');
+			}
+			return json;
+		}
 
-			document.getElementById("meBtn").addEventListener("click", async () => {
-				try {
-					const me = await api("/api/users/me", "GET");
-					ui.apiOutput.textContent = JSON.stringify(me, null, 2);
-				} catch (e) {
-					setAuthStatus(`Error me: ${String(e.message)}`);
-				}
-			});
+		loginForm.addEventListener('submit', async (e) => {
+			e.preventDefault();
+			const email = document.getElementById('email').value;
+			const password = document.getElementById('password').value;
+			
+			try {
+				const result = await api('/api/auth/login', 'POST', { email, password }, false);
+				state.token = result.token;
+				state.user = result.user;
+				localStorage.setItem('eternamente_token', result.token);
+				localStorage.setItem('eternamente_user', JSON.stringify(result.user));
+				showMessage('¡Bienvenido! Redirigiendo...', 'success');
+				setTimeout(() => window.location.href = '/game', 800);
+			} catch (err) {
+				showMessage('Credenciales incorrectas. Intenta de nuevo.', 'error');
+			}
+		});
 
-			document.getElementById("newGameBtn").addEventListener("click", () => newGame());
+		registerForm.addEventListener('submit', async (e) => {
+			e.preventDefault();
+			const email = document.getElementById('regEmail').value;
+			const password = document.getElementById('regPassword').value;
+			const fullName = document.getElementById('regName').value;
+			
+			try {
+				const result = await api('/api/auth/register', 'POST', {
+					email,
+					password,
+					fullName,
+					role: 'PATIENT'
+				}, false);
+				state.token = result.token;
+				state.user = result.user;
+				localStorage.setItem('eternamente_token', result.token);
+				localStorage.setItem('eternamente_user', JSON.stringify(result.user));
+				showMessage('¡Cuenta creada! Redirigiendo...', 'success');
+				setTimeout(() => window.location.href = '/game', 800);
+			} catch (err) {
+				showMessage('Error al crear cuenta. El correo ya puede estar registrado.', 'error');
+			}
+		});
+	</script>
 
-			document.getElementById("saveSessionBtn").addEventListener("click", async () => {
-				try {
-					const endAt = performance.now();
-					const durationSeconds = (endAt - (state.startAt || endAt)) / 1000;
-					const averageRevealMs = average(state.revealDurations);
-					const payload = {
-						difficulty: ui.difficulty.value,
-						totalPairs: state.totalPairs,
-						matchedPairs: state.matchedPairs,
-						moves: state.moves,
-						mismatches: state.mismatches,
-						durationSeconds: Number(durationSeconds.toFixed(2)),
-						averageRevealMs: Number(averageRevealMs.toFixed(2)),
-						hintsUsed: 0
-					};
-					const saved = await api("/api/games/memory-pairs/sessions", "POST", payload);
-					ui.apiOutput.textContent = JSON.stringify(saved, null, 2);
-					setGameStatus("Partida guardada en backend.");
-				} catch (e) {
-					setGameStatus(`Error al guardar: ${String(e.message)}`);
-				}
-			});
+	<style>
+		.auth-container {
+			min-height: 100vh;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			padding: 24px;
+			position: relative;
+			overflow: hidden;
+		}
 
-			document.getElementById("analysisBtn").addEventListener("click", async () => {
-				try {
-					const analysis = await api("/api/games/memory-pairs/analysis/me", "GET");
-					ui.apiOutput.textContent = JSON.stringify(analysis, null, 2);
-				} catch (e) {
-					setGameStatus(`Error análisis: ${String(e.message)}`);
-				}
-			});
+		.auth-background {
+			position: absolute;
+			inset: 0;
+			z-index: -1;
+		}
 
-			newGame();
-		</script>
-	</body>
-</html>
+		.bg-pattern {
+			position: absolute;
+			inset: 0;
+			background-image: 
+				radial-gradient(circle at 20% 80%, rgba(184, 134, 11, 0.08) 0%, transparent 50%),
+				radial-gradient(circle at 80% 20%, rgba(45, 55, 72, 0.06) 0%, transparent 50%);
+		}
+
+		.bg-gradient {
+			position: absolute;
+			inset: 0;
+			background: linear-gradient(135deg, #FAF8F5 0%, #F5F0E8 50%, #FAF8F5 100%);
+		}
+
+		.auth-card {
+			width: 100%;
+			max-width: 420px;
+			background: rgba(255, 255, 255, 0.95);
+			backdrop-filter: blur(20px);
+		}
+
+		.brand {
+			text-align: center;
+			margin-bottom: 32px;
+		}
+
+		.logo {
+			margin-bottom: 16px;
+			animation: float 3s ease-in-out infinite;
+		}
+
+		.title {
+			font-family: var(--font-display);
+			font-size: 32px;
+			font-weight: 700;
+			color: var(--primary);
+			margin-bottom: 4px;
+		}
+
+		.subtitle {
+			font-size: 14px;
+			color: var(--text-muted);
+			letter-spacing: 1px;
+			text-transform: uppercase;
+		}
+
+		.tabs {
+			display: flex;
+			gap: 8px;
+			margin-bottom: 24px;
+			background: var(--bg-cream);
+			padding: 4px;
+			border-radius: var(--radius-md);
+		}
+
+		.tab-btn {
+			flex: 1;
+			padding: 12px;
+			font-size: 14px;
+			font-weight: 500;
+			border: none;
+			background: transparent;
+			color: var(--text-muted);
+			border-radius: var(--radius-sm);
+			cursor: pointer;
+			transition: all 0.2s ease;
+		}
+
+		.tab-btn.active {
+			background: white;
+			color: var(--primary);
+			box-shadow: var(--shadow-sm);
+		}
+
+		.auth-form {
+			display: flex;
+			flex-direction: column;
+			gap: 20px;
+		}
+
+		.form-group {
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+		}
+
+		.form-group label {
+			font-size: 13px;
+			font-weight: 500;
+			color: var(--text-muted);
+		}
+
+		.btn-full {
+			width: 100%;
+			padding: 16px;
+			font-size: 15px;
+		}
+
+		.hidden {
+			display: none !important;
+		}
+
+		.auth-message {
+			margin-top: 16px;
+			padding: 12px 16px;
+			border-radius: var(--radius-sm);
+			font-size: 14px;
+			text-align: center;
+		}
+
+		.auth-message.success {
+			background: rgba(56, 161, 105, 0.1);
+			color: var(--success);
+		}
+
+		.auth-message.error {
+			background: rgba(229, 62, 62, 0.1);
+			color: var(--error);
+		}
+
+		.auth-footer {
+			margin-top: 32px;
+			text-align: center;
+		}
+
+		.auth-footer p {
+			font-size: 12px;
+			color: var(--text-muted);
+		}
+	</style>
+</Layout>

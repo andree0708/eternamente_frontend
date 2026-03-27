@@ -1,0 +1,165 @@
+---
+const { title = "EternaMente" } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="description" content="EternaMente - Evaluación Cognitiva" />
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+		<title>{title}</title>
+		<style is:global>
+			:root {
+				--primary: #2D3748;
+				--primary-light: #4A5568;
+				--accent: #B8860B;
+				--accent-light: #DAA520;
+				--bg-cream: #FAF8F5;
+				--bg-white: #FFFFFF;
+				--text-dark: #1A202C;
+				--text-muted: #718096;
+				--success: #38A169;
+				--error: #E53E3E;
+				--border: #E2E8F0;
+				--shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+				--shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+				--shadow-lg: 0 10px 30px rgba(0,0,0,0.12);
+				--radius-sm: 8px;
+				--radius-md: 12px;
+				--radius-lg: 20px;
+				--font-display: 'Playfair Display', Georgia, serif;
+				--font-body: 'Inter', -apple-system, sans-serif;
+			}
+
+			*, *::before, *::after {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+
+			html {
+				font-size: 16px;
+				scroll-behavior: smooth;
+			}
+
+			body {
+				font-family: var(--font-body);
+				background: var(--bg-cream);
+				color: var(--text-dark);
+				min-height: 100vh;
+				line-height: 1.6;
+			}
+
+			.container {
+				max-width: 1200px;
+				margin: 0 auto;
+				padding: 0 24px;
+			}
+
+			.btn {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				gap: 8px;
+				padding: 12px 24px;
+				font-family: var(--font-body);
+				font-size: 14px;
+				font-weight: 500;
+				border-radius: var(--radius-md);
+				border: none;
+				cursor: pointer;
+				transition: all 0.2s ease;
+			}
+
+			.btn-primary {
+				background: var(--primary);
+				color: white;
+			}
+
+			.btn-primary:hover {
+				background: var(--primary-light);
+				transform: translateY(-1px);
+				box-shadow: var(--shadow-md);
+			}
+
+			.btn-accent {
+				background: var(--accent);
+				color: white;
+			}
+
+			.btn-accent:hover {
+				background: var(--accent-light);
+				transform: translateY(-1px);
+				box-shadow: var(--shadow-md);
+			}
+
+			.btn-outline {
+				background: transparent;
+				color: var(--primary);
+				border: 2px solid var(--primary);
+			}
+
+			.btn-outline:hover {
+				background: var(--primary);
+				color: white;
+			}
+
+			.btn:disabled {
+				opacity: 0.5;
+				cursor: not-allowed;
+				transform: none !important;
+			}
+
+			.input {
+				width: 100%;
+				padding: 14px 16px;
+				font-family: var(--font-body);
+				font-size: 15px;
+				border: 2px solid var(--border);
+				border-radius: var(--radius-md);
+				background: var(--bg-white);
+				transition: all 0.2s ease;
+			}
+
+			.input:focus {
+				outline: none;
+				border-color: var(--accent);
+				box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.15);
+			}
+
+			.input::placeholder {
+				color: var(--text-muted);
+			}
+
+			.card {
+				background: var(--bg-white);
+				border-radius: var(--radius-lg);
+				box-shadow: var(--shadow-lg);
+				padding: 32px;
+			}
+
+			.fade-in {
+				animation: fadeIn 0.5s ease forwards;
+			}
+
+			@keyframes fadeIn {
+				from { opacity: 0; transform: translateY(20px); }
+				to { opacity: 1; transform: translateY(0); }
+			}
+
+			@keyframes float {
+				0%, 100% { transform: translateY(0); }
+				50% { transform: translateY(-10px); }
+			}
+		</style>
+	</head>
+	<body>
+		<slot />
+	</body>
+</html>
