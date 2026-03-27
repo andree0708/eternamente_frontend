@@ -243,19 +243,23 @@ import Layout from '../layouts/Layout.astro';
 
 		async function api(endpoint, method, body) {
 			const headers = { 'Content-Type': 'application/json' };
+			console.log('Token actual:', state.token ? 'presente' : 'ausente');
 			if (state.token) {
 				headers.Authorization = `Bearer ${state.token}`;
 			}
-			console.log('API call:', method, endpoint, 'token:', state.token ? 'yes' : 'no');
+			console.log('API call:', method, endpoint, 'token:', state.token ? 'si' : 'no');
 			let baseUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
 			baseUrl = baseUrl.replace(/\/+$/, '').replace(/\/+$/, '');
-			const resp = await fetch(`${baseUrl}${endpoint}`, {
+			const url = `${baseUrl}${endpoint}`;
+			console.log('URL completa:', url);
+			const resp = await fetch(url, {
 				method,
 				headers,
 				body: body ? JSON.stringify(body) : undefined
 			});
 			console.log('Response status:', resp.status);
 			const text = await resp.text();
+			console.log('Response text:', text);
 			let json;
 			try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
 			if (!resp.ok) {
