@@ -247,7 +247,8 @@ import Layout from '../layouts/Layout.astro';
 				headers.Authorization = `Bearer ${state.token}`;
 			}
 			console.log('API call:', method, endpoint, 'token:', state.token ? 'yes' : 'no');
-			const resp = await fetch(`${import.meta.env.PUBLIC_API_URL}${endpoint}`, {
+			const baseUrl = import.meta.env.PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:8080';
+			const resp = await fetch(`${baseUrl}${endpoint}`, {
 				method,
 				headers,
 				body: body ? JSON.stringify(body) : undefined
