@@ -331,7 +331,7 @@ import Layout from '../layouts/Layout.astro';
 							<span class="result-value">${new Date(latest.createdAt).toLocaleDateString()}</span>
 						</div>
 						<div class="analysis-box">
-							<h3>Análisis completo (Ollama - gemma3:4b)</h3>
+							<h3>Análisis completo con AI </h3>
 							<p>${escapeHtml(analysisText).replace(/\n/g, '<br/>')}</p>
 						</div>
 					`;
@@ -421,7 +421,7 @@ import Layout from '../layouts/Layout.astro';
 		}
 
 		.game-main {
-			max-width: 900px;
+			max-width: 1100px;
 			margin: 0 auto;
 			padding: 32px 24px;
 			display: grid;
@@ -613,11 +613,14 @@ import Layout from '../layouts/Layout.astro';
 			display: flex;
 			flex-direction: column;
 			gap: 12px;
+			width: 100%;
 		}
 
 		.result-item {
 			display: flex;
 			justify-content: space-between;
+			align-items: flex-start;
+			gap: 16px;
 			padding: 12px;
 			background: var(--bg-cream);
 			border-radius: var(--radius-sm);
@@ -666,6 +669,24 @@ import Layout from '../layouts/Layout.astro';
 			font-size: 13px;
 			color: #334155;
 			line-height: 1.5;
+			white-space: pre-wrap;
+			overflow-wrap: anywhere;
+			word-break: break-word;
+		}
+
+		@media (max-width: 768px) {
+			.game-main {
+				padding: 20px 14px;
+			}
+
+			.game-card, .results-card {
+				padding: 20px;
+			}
+
+			.result-item {
+				flex-direction: column;
+				gap: 6px;
+			}
 		}
 	</style>
 </Layout>
