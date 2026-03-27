@@ -236,16 +236,18 @@ import Layout from '../layouts/Layout.astro';
 			if (state.token) {
 				headers.Authorization = `Bearer ${state.token}`;
 			}
+			console.log('API call:', method, endpoint, 'token:', state.token ? 'yes' : 'no');
 			const resp = await fetch(`http://localhost:8080${endpoint}`, {
 				method,
 				headers,
 				body: body ? JSON.stringify(body) : undefined
 			});
+			console.log('Response status:', resp.status);
 			const text = await resp.text();
 			let json;
 			try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
 			if (!resp.ok) {
-				throw new Error(json.message || json.raw || 'Error');
+				throw new Error(json.message || json.raw || `Error ${resp.status}`);
 			}
 			return json;
 		}
