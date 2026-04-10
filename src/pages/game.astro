@@ -63,14 +63,6 @@ import Layout from '../layouts/Layout.astro';
 						</svg>
 						Nueva Partida
 					</button>
-					<button id="saveBtn" class="btn btn-accent" disabled>
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-							<polyline points="17 21 17 13 7 13 7 21"/>
-							<polyline points="7 3 7 8 15 8"/>
-						</svg>
-						Guardar Resultados
-					</button>
 				</div>
 
 				<div id="gameMessage" class="game-message"></div>
@@ -266,9 +258,9 @@ import Layout from '../layouts/Layout.astro';
 					</div>
 				</div>
 			`;
-			document.getElementById('saveBtn').disabled = false;
-			showMessage('¡Completado! Puedes guardar los resultados.', 'success');
+			showMessage('¡Completado! Guardando resultados...', 'success');
 			document.getElementById('viewResultsBtn').classList.remove('hidden');
+			saveGameResults();
 		}
 
 		function initWhackamoleGame() {
@@ -379,9 +371,9 @@ import Layout from '../layouts/Layout.astro';
 					</div>
 				</div>
 			`;
-			document.getElementById('saveBtn').disabled = false;
-			showMessage('¡Completado! Puedes guardar los resultados.', 'success');
+			showMessage('¡Completado! Guardando resultados...', 'success');
 			document.getElementById('viewResultsBtn').classList.remove('hidden');
+			saveGameResults();
 		}
 
 		function initNavigationGame() {
@@ -482,9 +474,9 @@ import Layout from '../layouts/Layout.astro';
 					</div>
 				</div>
 			`;
-			document.getElementById('saveBtn').disabled = false;
-			showMessage('¡Completado! Puedes guardar los resultados.', 'success');
+			showMessage('¡Completado! Guardando resultados...', 'success');
 			document.getElementById('viewResultsBtn').classList.remove('hidden');
+			saveGameResults();
 		}
 
 		const symbols = ['★', '♥', '♦', '♣', '♠', '✿', '☀', '☁'];
@@ -574,7 +566,6 @@ import Layout from '../layouts/Layout.astro';
 			state.openIndexes = [];
 			state.lockBoard = false;
 			state.cards = createDeck();
-			document.getElementById('saveBtn').disabled = true;
 			updateMetrics();
 			renderBoard();
 			showMessage('Partida iniciada. ¡Encuentra los pares!');
@@ -609,9 +600,9 @@ import Layout from '../layouts/Layout.astro';
 				updateMetrics();
 				renderBoard();
 				if (state.matchedPairs === state.totalPairs) {
-					document.getElementById('saveBtn').disabled = false;
-					showMessage('¡Completado! Puedes guardar los resultados.', 'success');
+					showMessage('¡Completado! Guardando resultados...', 'success');
 					document.getElementById('viewResultsBtn').classList.remove('hidden');
+					saveGameResults();
 				}
 				return;
 			}
@@ -667,7 +658,7 @@ import Layout from '../layouts/Layout.astro';
 			}
 		});
 
-		document.getElementById('saveBtn').addEventListener('click', async () => {
+		async function saveGameResults() {
 			let metrics = {};
 			const endAt = performance.now();
 
@@ -731,7 +722,7 @@ import Layout from '../layouts/Layout.astro';
 			} catch (err) {
 				showMessage('Error al guardar: ' + err.message, 'error');
 			}
-		});
+		}
 
 		document.getElementById('viewResultsBtn').addEventListener('click', async () => {
 			if (state.loadingAnalysis) return;
