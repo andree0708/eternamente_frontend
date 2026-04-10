@@ -78,16 +78,27 @@ import Layout from '../layouts/Layout.astro';
 
 			<div class="results-card fade-in" style="animation-delay: 0.2s;">
 				<h2>Resultados de Evaluación</h2>
-				<button id="viewResultsBtn" class="btn btn-outline btn-full">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-						<polyline points="14 2 14 8 20 8"/>
-						<line x1="16" y1="13" x2="8" y2="13"/>
-						<line x1="16" y1="17" x2="8" y2="17"/>
-					</svg>
-					Ver Análisis Completo
-				</button>
-				<div id="resultsContent" class="results-content"></div>
+				<div class="results-tabs">
+					<button class="tab-result active" data-tab="current">Partida Actual</button>
+					<button class="tab-result" data-tab="history">Historial</button>
+				</div>
+				
+				<div id="currentResult" class="result-panel">
+					<button id="viewResultsBtn" class="btn btn-outline btn-full">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+							<polyline points="14 2 14 8 20 8"/>
+							<line x1="16" y1="13" x2="8" y2="13"/>
+							<line x1="16" y1="17" x2="8" y2="17"/>
+						</svg>
+						Ver Análisis Completo
+					</button>
+					<div id="resultsContent" class="results-content"></div>
+				</div>
+				
+				<div id="historyResult" class="result-panel hidden">
+					<div id="historyContent" class="history-list"></div>
+				</div>
 			</div>
 		</main>
 	</div>
@@ -225,6 +236,7 @@ import Layout from '../layouts/Layout.astro';
 				if (state.matchedPairs === state.totalPairs) {
 					document.getElementById('saveBtn').disabled = false;
 					showMessage('¡Completado! Puedes guardar los resultados.', 'success');
+					document.getElementById('viewResultsBtn').classList.remove('hidden');
 				}
 				return;
 			}
@@ -373,6 +385,85 @@ import Layout from '../layouts/Layout.astro';
 		});
 
 		newGame();
+
+		document.getElementById('viewResultsBtn').classList.add('hidden');
+
+		document.querySelectorAll('.tab-result').forEach(tab => {
+			tab.addEventListener('click', () => {
+				document.querySelectorAll('.tab-result').forEach(t => t.classList.remove('active'));
+				tab.classList.add('active');
+				const isHistory = tab.dataset.tab === 'history';
+				document.getElementById('currentResult').classList.toggle('hidden', isHistory);
+				document.getElementById('historyResult').classList.toggle('hidden', !isHistory);
+				if (isHistory) loadHistory();
+			});
+		});
+
+		async function loadHistory() {
+			const historyContent = document.getElementById('historyContent');
+			historyContent.innerHTML = '<div class="loading">Cargando historial...</div>';
+			try {
+				const assessments = await api('/api/assessments', 'GET');
+				assessments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+				if (assessments.length === 0) {
+					historyContent.innerHTML = '<p class="no-results">No hay evaluaciones en el historial</p>';
+					return;
+				}
+				let html = '';
+				for (const a of assessments) {
+					const date = new Date(a.createdAt).toLocaleDateString();
+					const time = new Date(a.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+					const riskPercent = (a.riskScore * 100).toFixed(0);
+					html += `
+						<div class="history-item" data-id="${a.id}">
+							<div class="history-date">${date} <span class="history-time">${time}</span></div>
+							<div class="history-stats">
+								<span class="history-risk ${a.predictedDcl ? 'risk' : 'normal'}">Riesgo: ${riskPercent}%</span>
+								<span class="history-dcl ${a.predictedDcl ? 'risk' : 'normal'}">${a.predictedDcl ? 'DCL' : 'Normal'}</span>
+							</div>
+						</div>
+					`;
+				}
+				historyContent.innerHTML = html;
+				document.querySelectorAll('.history-item').forEach(item => {
+					item.addEventListener('click', () => loadHistoryDetail(item.dataset.id));
+				});
+			} catch (err) {
+				historyContent.innerHTML = '<p class="no-results">Error al cargar historial</p>';
+			}
+		}
+
+		async function loadHistoryDetail(id) {
+			const historyContent = document.getElementById('historyContent');
+			historyContent.innerHTML = '<div class="loading">Cargando análisis...</div>';
+			try {
+				const detailed = await api(`/api/assessments/${id}/analysis`, 'GET');
+				const assessment = await api(`/api/assessments/${id}`, 'GET');
+				const date = new Date(assessment.createdAt).toLocaleDateString();
+				historyContent.innerHTML = `
+					<button class="btn-back" onclick="loadHistory()">← Volver al historial</button>
+					<div class="history-detail">
+						<h3>Evaluación del ${date}</h3>
+						<div class="result-item">
+							<span class="result-label">Riesgo</span>
+							<span class="result-value">${(assessment.riskScore * 100).toFixed(1)}%</span>
+						</div>
+						<div class="result-item">
+							<span class="result-label">DCL</span>
+							<span class="result-value ${assessment.predictedDcl ? 'risk' : 'normal'}">${assessment.predictedDcl ? 'Riesgo detectado' : 'Normal'}</span>
+						</div>
+						<div class="analysis-box">
+							<h3>Análisis completo</h3>
+							<div class="analysis-text">${escapeHtml(detailed.analysis || 'Sin análisis disponible').replace(/\n/g, '<br/>')}</div>
+						</div>
+					</div>
+				`;
+			} catch (err) {
+				historyContent.innerHTML = '<p class="no-results">Error al cargar el análisis</p><button class="btn-back" onclick="loadHistory()">← Volver</button>';
+			}
+		}
+
+		window.loadHistory = loadHistory;
 	</script>
 
 	<style>
@@ -608,6 +699,123 @@ import Layout from '../layouts/Layout.astro';
 			font-size: 20px;
 			color: var(--primary);
 			margin-bottom: 16px;
+		}
+
+		.results-tabs {
+			display: flex;
+			gap: 8px;
+			margin-bottom: 20px;
+			background: var(--bg-cream);
+			padding: 4px;
+			border-radius: var(--radius-md);
+		}
+
+		.tab-result {
+			flex: 1;
+			padding: 10px;
+			font-size: 13px;
+			font-weight: 500;
+			border: none;
+			background: transparent;
+			color: var(--text-muted);
+			border-radius: var(--radius-sm);
+			cursor: pointer;
+			transition: all 0.2s ease;
+		}
+
+		.tab-result.active {
+			background: white;
+			color: var(--primary);
+			box-shadow: var(--shadow-sm);
+		}
+
+		.result-panel {
+			width: 100%;
+		}
+
+		.history-list {
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+		}
+
+		.history-item {
+			padding: 16px;
+			background: var(--bg-cream);
+			border-radius: var(--radius-sm);
+			cursor: pointer;
+			transition: all 0.2s;
+			border: 1px solid transparent;
+		}
+
+		.history-item:hover {
+			border-color: var(--accent);
+			transform: translateY(-2px);
+		}
+
+		.history-date {
+			font-size: 14px;
+			color: var(--primary);
+			font-weight: 500;
+			margin-bottom: 6px;
+		}
+
+		.history-time {
+			color: var(--text-muted);
+			font-weight: normal;
+			font-size: 12px;
+		}
+
+		.history-stats {
+			display: flex;
+			gap: 12px;
+			font-size: 13px;
+		}
+
+		.history-risk.risk, .history-dcl.risk {
+			color: var(--error);
+		}
+
+		.history-risk.normal, .history-dcl.normal {
+			color: var(--success);
+		}
+
+		.history-detail {
+			padding: 16px;
+		}
+
+		.history-detail h3 {
+			font-size: 16px;
+			margin-bottom: 16px;
+			color: var(--primary);
+		}
+
+		.btn-back {
+			padding: 10px 16px;
+			background: var(--bg-cream);
+			border: 1px solid var(--border);
+			border-radius: var(--radius-sm);
+			color: var(--text-muted);
+			cursor: pointer;
+			font-size: 13px;
+			margin-bottom: 16px;
+			transition: all 0.2s;
+		}
+
+		.btn-back:hover {
+			background: var(--primary);
+			color: white;
+			border-color: var(--primary);
+		}
+
+		.loading {
+			text-align: center;
+			color: var(--text-muted);
+			padding: 24px;
+		}
+
+		.hidden {
+			display: none !important;
 		}
 
 		.btn-full {
