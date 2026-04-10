@@ -104,9 +104,13 @@ import Layout from '../layouts/Layout.astro';
 	</div>
 
 	<script>
+		const urlParams = new URLSearchParams(window.location.search);
+		const gameType = urlParams.get('type') || 'memory';
+
 		const state = {
 			token: localStorage.getItem('eternamente_token') || '',
 			user: JSON.parse(localStorage.getItem('eternamente_user') || 'null'),
+			gameType: gameType,
 			startAt: null,
 			moves: 0,
 			mismatches: 0,
@@ -131,6 +135,21 @@ import Layout from '../layouts/Layout.astro';
 			localStorage.removeItem('eternamente_user');
 			window.location.href = '/';
 		});
+
+		const gameTitle = {
+			memory: 'Memoria de Pares',
+			stroop: 'Test de Stroop',
+			navigation: 'Navegación Espacial',
+			whackamole: 'Whack-a-Mole'
+		};
+
+		document.querySelector('.game-title h1').textContent = gameTitle[state.gameType] || 'Juego';
+
+		if (gameType !== 'memory') {
+			document.querySelector('.difficulty-selector').style.display = 'none';
+			document.querySelector('.game-board').style.display = 'none';
+			document.getElementById('board').innerHTML = '<div class="game-coming-soon"><p>Este juego está en desarrollo</p><a href="/games" class="btn btn-primary">Volver a juegos</a></div>';
+		}
 
 		const symbols = ['★', '♥', '♦', '♣', '♠', '✿', '☀', '☁'];
 		
@@ -814,6 +833,18 @@ import Layout from '../layouts/Layout.astro';
 			padding: 24px;
 		}
 
+		.game-coming-soon {
+			text-align: center;
+			padding: 60px 20px;
+			grid-column: 1 / -1;
+		}
+
+		.game-coming-soon p {
+			font-size: 20px;
+			color: var(--text-muted);
+			margin-bottom: 24px;
+		}
+
 		.hidden {
 			display: none !important;
 		}
@@ -900,6 +931,16 @@ import Layout from '../layouts/Layout.astro';
 			.result-item {
 				flex-direction: column;
 				gap: 6px;
+			}
+
+			.game-coming-soon {
+				text-align: center;
+				padding: 40px 20px;
+			}
+
+			.game-coming-soon p {
+				font-size: 18px;
+				margin-bottom: 20px;
 			}
 		}
 	</style>

@@ -81,8 +81,8 @@ import Layout from '../layouts/Layout.astro';
 			user: JSON.parse(localStorage.getItem('eternamente_user') || 'null')
 		};
 
-		if (state.token && state.user) {
-			window.location.href = '/game';
+			if (state.token && state.user) {
+			window.location.href = '/games';
 		}
 
 		const tabs = document.querySelectorAll('.tab-btn');
