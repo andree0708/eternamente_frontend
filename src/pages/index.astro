@@ -182,7 +182,7 @@ import Layout from '../layouts/Layout.astro';
 			
 			try {
 				console.log('Enviando registro:', { email, fullName });
-				const result = await api('/api/auth/register', 'POST', {
+				const result = await api('/api/users', 'POST', {
 					email,
 					password,
 					fullName,
