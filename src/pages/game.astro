@@ -145,10 +145,346 @@ import Layout from '../layouts/Layout.astro';
 
 		document.querySelector('.game-title h1').textContent = gameTitle[state.gameType] || 'Juego';
 
-		if (gameType !== 'memory') {
-			document.querySelector('.difficulty-selector').style.display = 'none';
+		const gameConfigs = {
+			memory: {
+				stats: ['Movimientos', 'Errores', 'Pares'],
+				showDifficulty: true
+			},
+			stroop: {
+				stats: ['Aciertos', 'Errores', 'Tiempo'],
+				showDifficulty: false
+			},
+			whackamole: {
+				stats: ['Aciertos', 'Errores', 'Tiempo'],
+				showDifficulty: false
+			},
+			navigation: {
+				stats: ['Nivel', 'Tiempo', 'Errores'],
+				showDifficulty: false
+			}
+		};
+
+		const config = gameConfigs[state.gameType] || gameConfigs.memory;
+		document.querySelectorAll('.stat-label').forEach((el, i) => {
+			if (config.stats[i]) el.textContent = config.stats[i];
+		});
+		document.querySelector('.difficulty-selector').style.display = config.showDifficulty ? 'block' : 'none';
+
+		if (state.gameType === 'stroop') {
+			initStroopGame();
+		} else if (state.gameType === 'whackamole') {
+			initWhackamoleGame();
+		} else if (state.gameType === 'navigation') {
+			initNavigationGame();
+		} else if (gameType !== 'memory') {
 			document.querySelector('.game-board').style.display = 'none';
 			document.getElementById('board').innerHTML = '<div class="game-coming-soon"><p>Este juego está en desarrollo</p><a href="/games" class="btn btn-primary">Volver a juegos</a></div>';
+		}
+
+		function initStroopGame() {
+			state.stroopData = {
+				rounds: 20,
+				played: 0,
+				correct: 0,
+				errors: 0,
+				startTime: null,
+				reactionTimes: [],
+				colors: ['rojo', 'azul', 'verde', 'amarillo'],
+				inkColors: ['#E53935', '#1E88E5', '#43A047', '#FDD835'],
+				currentWord: null,
+				currentInk: null
+			};
+
+			document.getElementById('board').innerHTML = `
+				<div class="stroop-container">
+					<div class="stroop-word" id="stroopWord">Listo</div>
+					<div class="stroop-instructions">Nombra el COLOR de la tinta, no la palabra</div>
+					<div class="stroop-buttons">
+						<button class="stroop-btn" data-color="rojo" style="--btn-color: #E53935">Rojo</button>
+						<button class="stroop-btn" data-color="azul" style="--btn-color: #1E88E5">Azul</button>
+						<button class="stroop-btn" data-color="verde" style="--btn-color: #43A047">Verde</button>
+						<button class="stroop-btn" data-color="amarillo" style="--btn-color: #FDD835">Amarillo</button>
+					</div>
+					<div class="stroop-progress">Ronda: <span id="stroopRound">0</span>/${state.stroopData.rounds}</div>
+				</div>
+			`;
+
+			document.querySelectorAll('.stroop-btn').forEach(btn => {
+				btn.addEventListener('click', () => handleStroopAnswer(btn.dataset.color));
+			});
+
+			setTimeout(() => nextStroopRound(), 1000);
+		}
+
+		function nextStroopRound() {
+			if (state.stroopData.played >= state.stroopData.rounds) {
+				endStroopGame();
+				return;
+			}
+			const data = state.stroopData;
+			const wordIdx = Math.floor(Math.random() * data.colors.length);
+			const inkIdx = Math.floor(Math.random() * data.inkColors.length);
+			data.currentWord = data.colors[wordIdx];
+			data.currentInk = data.inkColors[inkIdx];
+			data.startTime = performance.now();
+
+			const wordEl = document.getElementById('stroopWord');
+			wordEl.textContent = data.currentWord;
+			wordEl.style.color = data.currentInk;
+			document.getElementById('stroopRound').textContent = data.played + 1;
+		}
+
+		function handleStroopAnswer(color) {
+			const data = state.stroopData;
+			const reactionTime = performance.now() - data.startTime;
+			data.reactionTimes.push(reactionTime);
+
+			const colorMap = { 'rojo': 'rojo', 'azul': 'azul', 'verde': 'verde', 'amarillo': 'amarillo' };
+			const correctColor = colorMap[Object.keys(colorMap).find(k => colorMap[k] === color || k === color)] || color;
+			const inkColorNames = ['rojo', 'azul', 'verde', 'amarillo'];
+			const correctInk = inkColorNames[data.inkColors.indexOf(data.currentInk)];
+			const isCorrect = color === correctInk;
+
+			if (isCorrect) {
+				data.correct++;
+			} else {
+				data.errors++;
+			}
+			data.played++;
+			updateMetrics();
+			nextStroopRound();
+		}
+
+		function endStroopGame() {
+			document.getElementById('board').innerHTML = `
+				<div class="stroop-result">
+					<h2>¡Juego completado!</h2>
+					<div class="result-stats">
+						<div class="result-item"><span>Aciertos:</span><span>${state.stroopData.correct}/${state.stroopData.rounds}</span></div>
+						<div class="result-item"><span>Errores:</span><span>${state.stroopData.errors}</span></div>
+						<div class="result-item"><span>Tiempo medio:</span><span>${Math.round(state.stroopData.reactionTimes.reduce((a,b)=>a+b,0)/state.stroopData.reactionTimes.length)}ms</span></div>
+					</div>
+				</div>
+			`;
+			document.getElementById('saveBtn').disabled = false;
+			showMessage('¡Completado! Puedes guardar los resultados.', 'success');
+			document.getElementById('viewResultsBtn').classList.remove('hidden');
+		}
+
+		function initWhackamoleGame() {
+			state.whackData = {
+				rounds: 30,
+				played: 0,
+				correct: 0,
+				errors: 0,
+				startTime: null,
+				reactionTimes: [],
+				gridSize: 3,
+				targetPositions: [],
+				showDuration: 1200
+			};
+
+			document.getElementById('board').innerHTML = `
+				<div class="whack-container">
+					<div class="whack-grid" id="whackGrid"></div>
+					<div class="whack-progress">Objetivos: <span id="whackPlayed">0</span>/${state.whackData.rounds}</div>
+				</div>
+			`;
+
+			const grid = document.getElementById('whackGrid');
+			grid.style.gridTemplateColumns = `repeat(${state.whackData.gridSize}, 1fr)`;
+			for (let i = 0; i < state.whackData.gridSize * state.whackData.gridSize; i++) {
+				const cell = document.createElement('div');
+				cell.className = 'whack-cell';
+				cell.dataset.index = i;
+				cell.addEventListener('click', () => handleWhackClick(i));
+				grid.appendChild(cell);
+			}
+
+			setTimeout(() => nextWhackRound(), 1000);
+		}
+
+		function nextWhackRound() {
+			if (state.whackData.played >= state.whackData.rounds) {
+				endWhackGame();
+				return;
+			}
+			const data = state.whackData;
+			const cells = document.querySelectorAll('.whack-cell');
+			cells.forEach(c => { c.classList.remove('target', 'distractor'); c.innerHTML = ''; });
+
+			const targetIdx = Math.floor(Math.random() * cells.length);
+			const hasDistractor = Math.random() > 0.3;
+			let distractorIdx = null;
+			if (hasDistractor) {
+				distractorIdx = Math.floor(Math.random() * cells.length);
+				while (distractorIdx === targetIdx) {
+					distractorIdx = Math.floor(Math.random() * cells.length);
+				}
+			}
+
+			data.targetPositions = [targetIdx];
+			data.startTime = performance.now();
+
+			cells[targetIdx].classList.add('target');
+			cells[targetIdx].innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>';
+			if (distractorIdx !== null) {
+				cells[distractorIdx].classList.add('distractor');
+				cells[distractorIdx].innerHTML = '✕';
+			}
+
+			setTimeout(() => {
+				if (data.targetPositions.includes(targetIdx)) {
+					data.errors++;
+					data.played++;
+					updateMetrics();
+					cells[targetIdx].classList.remove('target');
+					cells[targetIdx].innerHTML = '';
+					if (distractorIdx !== null) {
+						cells[distractorIdx].classList.remove('distractor');
+						cells[distractorIdx].innerHTML = '';
+					}
+					nextWhackRound();
+				}
+			}, data.showDuration);
+		}
+
+		function handleWhackClick(index) {
+			const data = state.whackData;
+			if (!data.targetPositions.includes(index)) return;
+
+			const reactionTime = performance.now() - data.startTime;
+			data.reactionTimes.push(reactionTime);
+			data.correct++;
+			data.played++;
+
+			const cells = document.querySelectorAll('.whack-cell');
+			cells[index].classList.remove('target');
+			cells[index].innerHTML = '✓';
+			data.targetPositions = [];
+
+			updateMetrics();
+			setTimeout(() => nextWhackRound(), 300);
+		}
+
+		function endWhackGame() {
+			const data = state.whackData;
+			document.getElementById('board').innerHTML = `
+				<div class="whack-result">
+					<h2>¡Juego completado!</h2>
+					<div class="result-stats">
+						<div class="result-item"><span>Aciertos:</span><span>${data.correct}/${data.rounds}</span></div>
+						<div class="result-item"><span>Errores:</span><span>${data.errors}</span></div>
+						<div class="result-item"><span>Tiempo medio:</span><span>${Math.round(data.reactionTimes.reduce((a,b)=>a+b,0)/(data.reactionTimes.length||1))}ms</span></div>
+					</div>
+				</div>
+			`;
+			document.getElementById('saveBtn').disabled = false;
+			showMessage('¡Completado! Puedes guardar los resultados.', 'success');
+			document.getElementById('viewResultsBtn').classList.remove('hidden');
+		}
+
+		function initNavigationGame() {
+			state.navData = {
+				level: 1,
+				maxLevel: 5,
+				currentPath: [],
+				targetPath: [],
+				startTime: null,
+				errors: 0,
+				moves: 0,
+				gridSize: 5
+			};
+
+			document.getElementById('board').innerHTML = `
+				<div class="nav-container">
+					<div class="nav-grid" id="navGrid"></div>
+					<div class="nav-info">Nivel: <span id="navLevel">1</span>/${state.navData.maxLevel}</div>
+				</div>
+			`;
+
+			startNavigationLevel();
+		}
+
+		function startNavigationLevel() {
+			const data = state.navData;
+			data.currentPath = [12];
+			data.startTime = performance.now();
+
+			const grid = document.getElementById('navGrid');
+			grid.innerHTML = '';
+			grid.style.gridTemplateColumns = `repeat(${data.gridSize}, 1fr)`;
+
+			const startPos = 12;
+			const endRow = Math.floor(Math.random() * data.gridSize);
+			const endCol = Math.floor(Math.random() * data.gridSize);
+			data.targetPath = [endRow * data.gridSize + endCol];
+
+			for (let i = 0; i < data.gridSize * data.gridSize; i++) {
+				const cell = document.createElement('div');
+				cell.className = 'nav-cell';
+				cell.dataset.index = i;
+
+				if (i === startPos) {
+					cell.classList.add('player');
+					cell.innerHTML = '★';
+				} else if (i === data.targetPath[0]) {
+					cell.classList.add('goal');
+					cell.innerHTML = '⚑';
+				}
+
+				cell.addEventListener('click', () => handleNavMove(i));
+				grid.appendChild(cell);
+			}
+
+			document.getElementById('navLevel').textContent = data.level;
+		}
+
+		function handleNavMove(index) {
+			const data = state.navData;
+			const currentIdx = data.currentPath[data.currentPath.length - 1];
+			const currentRow = Math.floor(currentIdx / data.gridSize);
+			const currentCol = currentIdx % data.gridSize;
+			const targetRow = Math.floor(index / data.gridSize);
+			const targetCol = index % data.gridSize;
+
+			const isAdjacent = (Math.abs(currentRow - targetRow) + Math.abs(currentCol - targetCol)) === 1;
+			if (!isAdjacent) return;
+
+			data.moves++;
+			data.currentPath.push(index);
+
+			const cells = document.querySelectorAll('.nav-cell');
+			cells[currentIdx].classList.remove('player');
+			cells[currentIdx].innerHTML = '·';
+			cells[index].classList.add('player');
+			cells[index].innerHTML = '★';
+
+			if (index === data.targetPath[0]) {
+				data.level++;
+				updateMetrics();
+				if (data.level > data.maxLevel) {
+					endNavigationGame();
+				} else {
+					setTimeout(() => startNavigationLevel(), 500);
+				}
+			}
+		}
+
+		function endNavigationGame() {
+			const data = state.navData;
+			document.getElementById('board').innerHTML = `
+				<div class="nav-result">
+					<h2>¡Juego completado!</h2>
+					<div class="result-stats">
+						<div class="result-item"><span>Nivel alcanzado:</span><span>${data.level - 1}</span></div>
+						<div class="result-item"><span>Movimientos:</span><span>${data.moves}</span></div>
+					</div>
+				</div>
+			`;
+			document.getElementById('saveBtn').disabled = false;
+			showMessage('¡Completado! Puedes guardar los resultados.', 'success');
+			document.getElementById('viewResultsBtn').classList.remove('hidden');
 		}
 
 		const symbols = ['★', '♥', '♦', '♣', '♠', '✿', '☀', '☁'];
@@ -189,9 +525,29 @@ import Layout from '../layouts/Layout.astro';
 		}
 
 		function updateMetrics() {
-			document.getElementById('moves').textContent = state.moves;
-			document.getElementById('mismatches').textContent = state.mismatches;
-			document.getElementById('matched').textContent = state.matchedPairs;
+			if (state.gameType === 'memory') {
+				document.getElementById('moves').textContent = state.moves;
+				document.getElementById('mismatches').textContent = state.mismatches;
+				document.getElementById('matched').textContent = state.matchedPairs;
+			} else if (state.gameType === 'stroop' && state.stroopData) {
+				document.getElementById('moves').textContent = state.stroopData.correct;
+				document.getElementById('mismatches').textContent = state.stroopData.errors;
+				const avgTime = state.stroopData.reactionTimes.length > 0 
+					? Math.round(state.stroopData.reactionTimes.reduce((a,b)=>a+b,0)/state.stroopData.reactionTimes.length) 
+					: 0;
+				document.getElementById('matched').textContent = avgTime;
+			} else if (state.gameType === 'whackamole' && state.whackData) {
+				document.getElementById('moves').textContent = state.whackData.correct;
+				document.getElementById('mismatches').textContent = state.whackData.errors;
+				const avgTime = state.whackData.reactionTimes.length > 0 
+					? Math.round(state.whackData.reactionTimes.reduce((a,b)=>a+b,0)/state.whackData.reactionTimes.length) 
+					: 0;
+				document.getElementById('matched').textContent = avgTime;
+			} else if (state.gameType === 'navigation' && state.navData) {
+				document.getElementById('moves').textContent = state.navData.level;
+				document.getElementById('mismatches').textContent = state.navData.errors;
+				document.getElementById('matched').textContent = state.navData.moves;
+			}
 		}
 
 		function showMessage(text, type = 'info') {
@@ -299,31 +655,75 @@ import Layout from '../layouts/Layout.astro';
 			return json;
 		}
 
-		document.getElementById('newGameBtn').addEventListener('click', newGame);
+		document.getElementById('newGameBtn').addEventListener('click', () => {
+			if (state.gameType === 'memory') {
+				newGame();
+			} else if (state.gameType === 'stroop') {
+				initStroopGame();
+			} else if (state.gameType === 'whackamole') {
+				initWhackamoleGame();
+			} else if (state.gameType === 'navigation') {
+				initNavigationGame();
+			}
+		});
 
 		document.getElementById('saveBtn').addEventListener('click', async () => {
+			let metrics = {};
 			const endAt = performance.now();
-			const durationSeconds = (endAt - (state.startAt || endAt)) / 1000;
-			const avgReveal = state.revealDurations.length 
-				? state.revealDurations.reduce((a, b) => a + b, 0) / state.revealDurations.length 
-				: 0;
 
-			// Ajustamos el payload de `metrics` para que el backend pueda calcular un riesgo "entendible".
-			// El rule-based MlAnalysisService usa `accuracy` y `reactionTimeMs` (con fallback a otras keys).
-			const accuracy = state.totalPairs > 0 ? state.matchedPairs / state.totalPairs : 0; // 0..1
-
-			const metrics = {
-				difficulty: state.difficulty,
-				totalPairs: state.totalPairs,
-				matchedPairs: state.matchedPairs,
-				moves: state.moves,
-				mismatches: state.mismatches,
-				durationSeconds: Number(durationSeconds.toFixed(2)),
-				averageRevealMs: Number(avgReveal.toFixed(2)),
-				accuracy: Number(accuracy.toFixed(4)),
-				reactionTimeMs: Number(avgReveal.toFixed(2)),
-				hintsUsed: 0
-			};
+			if (state.gameType === 'memory') {
+				const durationSeconds = (endAt - (state.startAt || endAt)) / 1000;
+				const avgReveal = state.revealDurations.length 
+					? state.revealDurations.reduce((a, b) => a + b, 0) / state.revealDurations.length 
+					: 0;
+				const accuracy = state.totalPairs > 0 ? state.matchedPairs / state.totalPairs : 0;
+				metrics = {
+					gameType: 'memory',
+					difficulty: state.difficulty,
+					totalPairs: state.totalPairs,
+					matchedPairs: state.matchedPairs,
+					moves: state.moves,
+					mismatches: state.mismatches,
+					durationSeconds: Number(durationSeconds.toFixed(2)),
+					averageRevealMs: Number(avgReveal.toFixed(2)),
+					accuracy: Number(accuracy.toFixed(4)),
+					reactionTimeMs: Number(avgReveal.toFixed(2))
+				};
+			} else if (state.gameType === 'stroop' && state.stroopData) {
+				const avgReactionTime = state.stroopData.reactionTimes.length > 0
+					? state.stroopData.reactionTimes.reduce((a,b)=>a+b,0) / state.stroopData.reactionTimes.length
+					: 0;
+				const accuracy = state.stroopData.rounds > 0 ? state.stroopData.correct / state.stroopData.rounds : 0;
+				metrics = {
+					gameType: 'stroop',
+					totalRounds: state.stroopData.rounds,
+					correct: state.stroopData.correct,
+					errors: state.stroopData.errors,
+					accuracy: Number(accuracy.toFixed(4)),
+					averageReactionTimeMs: Number(avgReactionTime.toFixed(2))
+				};
+			} else if (state.gameType === 'whackamole' && state.whackData) {
+				const avgReactionTime = state.whackData.reactionTimes.length > 0
+					? state.whackData.reactionTimes.reduce((a,b)=>a+b,0) / state.whackData.reactionTimes.length
+					: 0;
+				const accuracy = state.whackData.rounds > 0 ? state.whackData.correct / state.whackData.rounds : 0;
+				metrics = {
+					gameType: 'whackamole',
+					totalRounds: state.whackData.rounds,
+					correct: state.whackData.correct,
+					errors: state.whackData.errors,
+					accuracy: Number(accuracy.toFixed(4)),
+					averageReactionTimeMs: Number(avgReactionTime.toFixed(2))
+				};
+			} else if (state.gameType === 'navigation' && state.navData) {
+				metrics = {
+					gameType: 'navigation',
+					maxLevel: state.navData.maxLevel,
+					achievedLevel: state.navData.level - 1,
+					totalMoves: state.navData.moves,
+					errors: state.navData.errors
+				};
+			}
 
 			try {
 				await api('/api/assessments', 'POST', { age: 65, metrics });
@@ -643,6 +1043,185 @@ import Layout from '../layouts/Layout.astro';
 			grid-template-columns: repeat(6, 1fr);
 			gap: 12px;
 			margin-bottom: 24px;
+		}
+
+		.stroop-container {
+			text-align: center;
+			padding: 20px;
+		}
+
+		.stroop-word {
+			font-size: 64px;
+			font-weight: 700;
+			margin-bottom: 16px;
+			min-height: 80px;
+		}
+
+		.stroop-instructions {
+			font-size: 16px;
+			color: var(--text-muted);
+			margin-bottom: 24px;
+		}
+
+		.stroop-buttons {
+			display: flex;
+			gap: 12px;
+			justify-content: center;
+			flex-wrap: wrap;
+			margin-bottom: 20px;
+		}
+
+		.stroop-btn {
+			padding: 16px 28px;
+			font-size: 16px;
+			font-weight: 600;
+			border: 3px solid var(--btn-color, #ccc);
+			background: white;
+			color: var(--btn-color, #333);
+			border-radius: 12px;
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+
+		.stroop-btn:hover {
+			background: var(--btn-color, #ccc);
+			color: white;
+			transform: scale(1.05);
+		}
+
+		.stroop-progress {
+			font-size: 16px;
+			color: var(--text-muted);
+		}
+
+		.stroop-result, .whack-result, .nav-result {
+			text-align: center;
+			padding: 30px;
+		}
+
+		.stroop-result h2, .whack-result h2, .nav-result h2 {
+			font-family: var(--font-display);
+			font-size: 24px;
+			color: var(--primary);
+			margin-bottom: 20px;
+		}
+
+		.result-stats {
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+		}
+
+		.result-stats .result-item {
+			display: flex;
+			justify-content: space-between;
+			padding: 12px;
+			background: var(--bg-cream);
+			border-radius: var(--radius-sm);
+		}
+
+		.whack-container {
+			text-align: center;
+		}
+
+		.whack-grid {
+			display: grid;
+			gap: 10px;
+			max-width: 350px;
+			margin: 0 auto 20px;
+		}
+
+		.whack-cell {
+			aspect-ratio: 1;
+			background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+			border-radius: 12px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 24px;
+			cursor: pointer;
+			transition: all 0.2s;
+			border: 2px solid transparent;
+		}
+
+		.whack-cell:hover {
+			transform: scale(1.05);
+		}
+
+		.whack-cell.target {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			animation: pulse 0.5s ease-in-out infinite;
+		}
+
+		.whack-cell.distractor {
+			background: linear-gradient(135deg, #e53935 0%, #c62828 100%);
+			color: white;
+			font-weight: bold;
+		}
+
+		.whack-cell.target svg {
+			animation: bounce 0.3s ease-in-out;
+		}
+
+		.whack-progress {
+			font-size: 16px;
+			color: var(--text-muted);
+		}
+
+		@keyframes pulse {
+			0%, 100% { transform: scale(1); }
+			50% { transform: scale(1.08); }
+		}
+
+		@keyframes bounce {
+			0% { transform: scale(0); }
+			50% { transform: scale(1.2); }
+			100% { transform: scale(1); }
+		}
+
+		.nav-container {
+			text-align: center;
+		}
+
+		.nav-grid {
+			display: grid;
+			gap: 6px;
+			max-width: 400px;
+			margin: 0 auto 20px;
+		}
+
+		.nav-cell {
+			aspect-ratio: 1;
+			background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+			border-radius: 8px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 24px;
+			cursor: pointer;
+			transition: all 0.2s;
+			border: 2px solid transparent;
+		}
+
+		.nav-cell:hover {
+			background: linear-gradient(135deg, #a5d6a7 0%, #81c784 100%);
+		}
+
+		.nav-cell.player {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+		}
+
+		.nav-cell.goal {
+			background: linear-gradient(135deg, #ffd54f 0%, #ffb300 100%);
+			color: white;
+			font-size: 28px;
+		}
+
+		.nav-info {
+			font-size: 16px;
+			color: var(--text-muted);
 		}
 
 		/* Global styles for dynamically created elements */
