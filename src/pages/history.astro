@@ -84,14 +84,19 @@ import Layout from '../layouts/Layout.astro';
 				.replace(/'/g, '&#039;');
 		}
 
-		function getGameInfo(gameType) {
-			const games = {
-				memory: { name: 'Memoria de Pares', icon: '🧠', color: '#667eea' },
-				stroop: { name: 'Test de Stroop', icon: '🎨', color: '#f093fb' },
-				navigation: { name: 'Navegación Espacial', icon: '🧭', color: '#4facfe' },
-				whackamole: { name: 'Whack-a-Mole', icon: '🐹', color: '#fa709a' }
-			};
-			return games[gameType] || { name: 'Juego', icon: '🎮', color: '#666' };
+		function getGameInfo(a) {
+			const gameType = a.metrics?.gameType;
+			
+			if (gameType === 'memory') return { name: 'Memoria de Pares', icon: '🧠', color: '#667eea' };
+			if (gameType === 'stroop') return { name: 'Test de Stroop', icon: '🎨', color: '#f093fb' };
+			if (gameType === 'navigation') return { name: 'Navegación Espacial', icon: '🧭', color: '#4facfe' };
+			if (gameType === 'whackamole') return { name: 'Whack-a-Mole', icon: '🐹', color: '#fa709a' };
+			
+			if (a.metrics?.matchedPairs !== undefined) return { name: 'Memoria de Pares', icon: '🧠', color: '#667eea' };
+			if (a.metrics?.correct !== undefined && a.metrics?.averageReactionTimeMs !== undefined) return { name: 'Test de Stroop', icon: '🎨', color: '#f093fb' };
+			if (a.metrics?.achievedLevel !== undefined) return { name: 'Navegación Espacial', icon: '🧭', color: '#4facfe' };
+			
+			return { name: 'Juego Cognitivo', icon: '🎮', color: '#666' };
 		}
 
 		function formatDate(dateStr) {
@@ -117,7 +122,7 @@ import Layout from '../layouts/Layout.astro';
 				}
 
 				document.getElementById('historyList').innerHTML = assessments.map(a => {
-					const game = getGameInfo(a.metrics?.gameType);
+					const game = getGameInfo(a);
 					const riskPercent = (a.riskScore * 100).toFixed(0);
 					const isRisk = a.predictedDcl;
 					const riskClass = isRisk ? 'risk' : 'normal';
@@ -129,7 +134,7 @@ import Layout from '../layouts/Layout.astro';
 									<span class="game-icon-large">${game.icon}</span>
 									<div class="game-info">
 										<span class="game-name">${game.name}</span>
-										<span class="game-type">${game.name}</span>
+										<span class="game-type">Juego #${a.id?.toString().slice(-4) || ''}</span>
 									</div>
 								</div>
 								<span class="risk-badge ${riskClass}">${isRisk ? '⚠️ Riesgo' : '✅ Normal'}</span>
