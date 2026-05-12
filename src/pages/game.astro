@@ -279,20 +279,20 @@ import Layout from '../layouts/Layout.astro';
 				startTime: null,
 				reactionTimes: [],
 				gridSize: 3,
-				targetPositions: [],
-				showDuration: 1200
+				showDuration: 1500,
+				currentTarget: null
 			};
 
 			document.getElementById('board').innerHTML = `
 				<div class="whack-container">
 					<div class="game-info-box">
 						<h3>¿Qué debes hacer?</h3>
-						<p>Toca el <strong>objetivo con la persona</strong> cuando aparezca.</p>
-						<p class="warning-text">⚠️ Ignora las X rojas (son distractores)</p>
+						<p>Cuando aparezca un <strong>🐹 hámster</strong>, tócalo lo más rápido posible.</p>
+						<p class="warning-text">⚠️ ¡CUIDADO! Si aparece una <strong>X</strong> NO la toques, es un distractor.</p>
 						<p class="eval-info">Evalúa: Atención sostenida y tiempo de reacción</p>
 					</div>
 					<div class="whack-grid" id="whackGrid"></div>
-					<div class="whack-progress">Objetivos: <span id="whackPlayed">0</span>/${state.whackData.rounds}</div>
+					<div class="whack-progress">Aciertos: <span id="whackCorrect">0</span> | Errores: <span id="whackErrors">0</span> | <span id="whackPlayed">0</span>/${state.whackData.rounds}</div>
 				</div>
 			`;
 
@@ -306,7 +306,7 @@ import Layout from '../layouts/Layout.astro';
 				grid.appendChild(cell);
 			}
 
-			setTimeout(() => nextWhackRound(), 1000);
+			setTimeout(() => nextWhackRound(), 1500);
 		}
 
 		function nextWhackRound() {
@@ -316,60 +316,79 @@ import Layout from '../layouts/Layout.astro';
 			}
 			const data = state.whackData;
 			const cells = document.querySelectorAll('.whack-cell');
-			cells.forEach(c => { c.classList.remove('target', 'distractor'); c.innerHTML = ''; });
+			cells.forEach(c => { c.classList.remove('target', 'distractor', 'correct', 'wrong'); c.innerHTML = ''; c.style.pointerEvents = 'auto'; });
 
 			const targetIdx = Math.floor(Math.random() * cells.length);
-			const hasDistractor = Math.random() > 0.3;
+			const hasDistractor = Math.random() > 0.4;
 			let distractorIdx = null;
 			if (hasDistractor) {
-				distractorIdx = Math.floor(Math.random() * cells.length);
-				while (distractorIdx === targetIdx) {
+				do {
 					distractorIdx = Math.floor(Math.random() * cells.length);
-				}
+				} while (distractorIdx === targetIdx);
 			}
 
-			data.targetPositions = [targetIdx];
+			data.currentTarget = targetIdx;
 			data.startTime = performance.now();
 
 			cells[targetIdx].classList.add('target');
-			cells[targetIdx].innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>';
+			cells[targetIdx].innerHTML = '<span class="whack-emoji">🐹</span>';
 			if (distractorIdx !== null) {
 				cells[distractorIdx].classList.add('distractor');
-				cells[distractorIdx].innerHTML = '✕';
+				cells[distractorIdx].innerHTML = '<span class="whack-x">✕</span>';
 			}
 
+			document.getElementById('whackPlayed').textContent = data.played;
+
 			setTimeout(() => {
-				if (data.targetPositions.includes(targetIdx)) {
+				if (data.currentTarget === targetIdx) {
 					data.errors++;
 					data.played++;
-					updateMetrics();
 					cells[targetIdx].classList.remove('target');
-					cells[targetIdx].innerHTML = '';
-					if (distractorIdx !== null) {
-						cells[distractorIdx].classList.remove('distractor');
-						cells[distractorIdx].innerHTML = '';
-					}
-					nextWhackRound();
+					cells[targetIdx].classList.add('wrong');
+					cells[targetIdx].innerHTML = '<span class="whack-x">⏰</span>';
+					cells[targetIdx].style.pointerEvents = 'none';
+					updateWhackMetrics();
+					setTimeout(() => nextWhackRound(), 500);
 				}
 			}, data.showDuration);
 		}
 
+		function updateWhackMetrics() {
+			const data = state.whackData;
+			document.getElementById('whackCorrect').textContent = data.correct;
+			document.getElementById('whackErrors').textContent = data.errors;
+		}
+
 		function handleWhackClick(index) {
 			const data = state.whackData;
-			if (!data.targetPositions.includes(index)) return;
-
-			const reactionTime = performance.now() - data.startTime;
-			data.reactionTimes.push(reactionTime);
-			data.correct++;
-			data.played++;
-
 			const cells = document.querySelectorAll('.whack-cell');
-			cells[index].classList.remove('target');
-			cells[index].innerHTML = '✓';
-			data.targetPositions = [];
+			const cell = cells[index];
 
-			updateMetrics();
-			setTimeout(() => nextWhackRound(), 300);
+			if (index === data.currentTarget) {
+				const reactionTime = performance.now() - data.startTime;
+				data.reactionTimes.push(reactionTime);
+				data.correct++;
+				data.played++;
+				data.currentTarget = null;
+				cell.classList.remove('target');
+				cell.classList.add('correct');
+				cell.innerHTML = '<span class="whack-check">✓</span>';
+				cell.style.pointerEvents = 'none';
+				updateWhackMetrics();
+				updateMetrics();
+				setTimeout(() => nextWhackRound(), 400);
+			} else if (cell.classList.contains('distractor')) {
+				data.errors++;
+				data.played++;
+				data.currentTarget = null;
+				cell.classList.remove('distractor');
+				cell.classList.add('wrong');
+				cell.innerHTML = '<span class="whack-x">✕</span>';
+				cell.style.pointerEvents = 'none';
+				updateWhackMetrics();
+				updateMetrics();
+				setTimeout(() => nextWhackRound(), 400);
+			}
 		}
 
 		function endWhackGame() {
@@ -394,12 +413,11 @@ import Layout from '../layouts/Layout.astro';
 			state.navData = {
 				level: 1,
 				maxLevel: 5,
-				currentPath: [],
-				targetPath: [],
-				startTime: null,
-				errors: 0,
+				currentPos: 12,
+				targetPos: 0,
 				moves: 0,
-				gridSize: 5
+				gridSize: 5,
+				gameStarted: false
 			};
 
 			document.getElementById('board').innerHTML = `
@@ -407,72 +425,109 @@ import Layout from '../layouts/Layout.astro';
 					<div class="game-info-box">
 						<h3>¿Qué debes hacer?</h3>
 						<p>Ayuda al jugador <strong>★</strong> a llegar a la bandera <strong>⚑</strong></p>
-						<p>Haz clic en las casillas adyacentes para moverte.</p>
+						<p>Toca las flechas para moverte hacia la bandera.</p>
 						<p class="eval-info">Evalúa: Orientación espacial y memoria</p>
 					</div>
-					<div class="nav-grid" id="navGrid"></div>
+					<div class="nav-game-area">
+						<div class="nav-grid" id="navGrid"></div>
+						<div class="nav-controls">
+							<div class="nav-arrow nav-up" data-dir="up">↑</div>
+							<div class="nav-arrow-row">
+								<div class="nav-arrow nav-left" data-dir="left">←</div>
+								<div class="nav-arrow nav-right" data-dir="right">→</div>
+							</div>
+							<div class="nav-arrow nav-down" data-dir="down">↓</div>
+						</div>
+					</div>
 					<div class="nav-info">Nivel: <span id="navLevel">1</span>/${state.navData.maxLevel}</div>
 				</div>
 			`;
+
+			document.querySelectorAll('.nav-arrow').forEach(btn => {
+				btn.addEventListener('click', () => handleNavMove(btn.dataset.dir));
+			});
 
 			startNavigationLevel();
 		}
 
 		function startNavigationLevel() {
 			const data = state.navData;
-			data.currentPath = [12];
-			data.startTime = performance.now();
-
 			const grid = document.getElementById('navGrid');
 			grid.innerHTML = '';
 			grid.style.gridTemplateColumns = `repeat(${data.gridSize}, 1fr)`;
 
-			const startPos = 12;
-			const endRow = Math.floor(Math.random() * data.gridSize);
-			const endCol = Math.floor(Math.random() * data.gridSize);
-			data.targetPath = [endRow * data.gridSize + endCol];
+			const startRow = Math.floor(Math.random() * data.gridSize);
+			const startCol = Math.floor(Math.random() * data.gridSize);
+			data.currentPos = startRow * data.gridSize + startCol;
+
+			let targetRow, targetCol;
+			do {
+				targetRow = Math.floor(Math.random() * data.gridSize);
+				targetCol = Math.floor(Math.random() * data.gridSize);
+			} while (targetRow === startRow && targetCol === startCol);
+			data.targetPos = targetRow * data.gridSize + targetCol;
 
 			for (let i = 0; i < data.gridSize * data.gridSize; i++) {
 				const cell = document.createElement('div');
 				cell.className = 'nav-cell';
 				cell.dataset.index = i;
 
-				if (i === startPos) {
+				if (i === data.currentPos) {
 					cell.classList.add('player');
 					cell.innerHTML = '★';
-				} else if (i === data.targetPath[0]) {
+				} else if (i === data.targetPos) {
 					cell.classList.add('goal');
 					cell.innerHTML = '⚑';
 				}
 
-				cell.addEventListener('click', () => handleNavMove(i));
 				grid.appendChild(cell);
 			}
 
 			document.getElementById('navLevel').textContent = data.level;
+			updateNavArrows();
 		}
 
-		function handleNavMove(index) {
+		function updateNavArrows() {
 			const data = state.navData;
-			const currentIdx = data.currentPath[data.currentPath.length - 1];
-			const currentRow = Math.floor(currentIdx / data.gridSize);
-			const currentCol = currentIdx % data.gridSize;
-			const targetRow = Math.floor(index / data.gridSize);
-			const targetCol = index % data.gridSize;
+			const row = Math.floor(data.currentPos / data.gridSize);
+			const col = data.currentPos % data.gridSize;
 
-			const isAdjacent = (Math.abs(currentRow - targetRow) + Math.abs(currentCol - targetCol)) === 1;
-			if (!isAdjacent) return;
+			document.querySelector('.nav-up').style.opacity = row > 0 ? '1' : '0.3';
+			document.querySelector('.nav-down').style.opacity = row < data.gridSize - 1 ? '1' : '0.3';
+			document.querySelector('.nav-left').style.opacity = col > 0 ? '1' : '0.3';
+			document.querySelector('.nav-right').style.opacity = col < data.gridSize - 1 ? '1' : '0.3';
+		}
+
+		function handleNavMove(direction) {
+			const data = state.navData;
+			const row = Math.floor(data.currentPos / data.gridSize);
+			const col = data.currentPos % data.gridSize;
+
+			let newPos = data.currentPos;
+
+			if (direction === 'up' && row > 0) newPos = data.currentPos - data.gridSize;
+			if (direction === 'down' && row < data.gridSize - 1) newPos = data.currentPos + data.gridSize;
+			if (direction === 'left' && col > 0) newPos = data.currentPos - 1;
+			if (direction === 'right' && col < data.gridSize - 1) newPos = data.currentPos + 1;
+
+			if (newPos === data.currentPos) return;
 
 			data.moves++;
-			data.currentPath.push(index);
+			data.currentPos = newPos;
 
 			const cells = document.querySelectorAll('.nav-cell');
-			cells[currentIdx].classList.remove('player');
-			cells[currentIdx].innerHTML = '·';
-			cells[index].classList.add('player');
-			cells[index].innerHTML = '★';
+			cells.forEach((cell, i) => {
+				cell.classList.remove('player');
+				cell.innerHTML = '';
+				if (i === data.currentPos) {
+					cell.classList.add('player');
+					cell.innerHTML = '★';
+				}
+			});
 
-			if (index === data.targetPath[0]) {
+			updateNavArrows();
+
+			if (data.currentPos === data.targetPos) {
 				data.level++;
 				updateMetrics();
 				if (data.level > data.maxLevel) {
@@ -1207,7 +1262,7 @@ import Layout from '../layouts/Layout.astro';
 		}
 
 		.whack-cell.target {
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
 			color: white;
 			animation: pulse 0.5s ease-in-out infinite;
 		}
@@ -1218,35 +1273,52 @@ import Layout from '../layouts/Layout.astro';
 			font-weight: bold;
 		}
 
-		.whack-cell.target svg {
-			animation: bounce 0.3s ease-in-out;
+		.whack-cell.correct {
+			background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%);
+			color: white;
+		}
+
+		.whack-cell.wrong {
+			background: linear-gradient(135deg, #9e9e9e 0%, #616161 100%);
+			color: white;
+		}
+
+		.whack-emoji {
+			font-size: 36px;
+		}
+
+		.whack-check, .whack-x {
+			font-size: 28px;
+			font-weight: bold;
 		}
 
 		.whack-progress {
 			font-size: 16px;
 			color: var(--text-muted);
+			margin-top: 16px;
 		}
 
 		@keyframes pulse {
 			0%, 100% { transform: scale(1); }
-			50% { transform: scale(1.08); }
-		}
-
-		@keyframes bounce {
-			0% { transform: scale(0); }
-			50% { transform: scale(1.2); }
-			100% { transform: scale(1); }
+			50% { transform: scale(1.1); }
 		}
 
 		.nav-container {
 			text-align: center;
 		}
 
+		.nav-game-area {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 20px;
+		}
+
 		.nav-grid {
 			display: grid;
 			gap: 6px;
-			max-width: 400px;
-			margin: 0 auto 20px;
+			max-width: 350px;
+			margin: 0 auto;
 		}
 
 		.nav-cell {
@@ -1257,18 +1329,13 @@ import Layout from '../layouts/Layout.astro';
 			align-items: center;
 			justify-content: center;
 			font-size: 24px;
-			cursor: pointer;
-			transition: all 0.2s;
 			border: 2px solid transparent;
-		}
-
-		.nav-cell:hover {
-			background: linear-gradient(135deg, #a5d6a7 0%, #81c784 100%);
 		}
 
 		.nav-cell.player {
 			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 			color: white;
+			box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
 		}
 
 		.nav-cell.goal {
@@ -1278,8 +1345,53 @@ import Layout from '../layouts/Layout.astro';
 		}
 
 		.nav-info {
-			font-size: 16px;
+			font-size: 18px;
 			color: var(--text-muted);
+			margin-top: 16px;
+			font-weight: 600;
+		}
+
+		.nav-controls {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.nav-arrow-row {
+			display: flex;
+			gap: 60px;
+		}
+
+		.nav-arrow {
+			width: 56px;
+			height: 56px;
+			border-radius: 50%;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			font-size: 28px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+			transition: all 0.2s;
+			box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+			user-select: none;
+		}
+
+		.nav-arrow:hover {
+			transform: scale(1.1);
+			box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+		}
+
+		.nav-arrow:active {
+			transform: scale(0.95);
+		}
+
+		.nav-arrow[style*="0.3"] {
+			background: #ccc;
+			cursor: not-allowed;
+			box-shadow: none;
 		}
 
 		/* Global styles for dynamically created elements */
