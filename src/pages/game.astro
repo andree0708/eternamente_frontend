@@ -189,8 +189,14 @@ import Layout from '../layouts/Layout.astro';
 
 			document.getElementById('board').innerHTML = `
 				<div class="stroop-container">
+					<div class="game-info-box">
+						<h3>¿Qué debes hacer?</h3>
+						<p>Verás una <strong>palabra de color</strong> (ej: la palabra "ROJO" escrita en tinta AZUL).</p>
+						<p>Tu tarea: <strong>IGNORA la palabra</strong> y selecciona el <strong>COLOR DE LA TINTA</strong> en que está escrita.</p>
+						<p class="eval-info">Evalúa: Control inhibitorio y flexibilidad cognitiva</p>
+					</div>
 					<div class="stroop-word" id="stroopWord">Listo</div>
-					<div class="stroop-instructions">Nombra el COLOR de la tinta, no la palabra</div>
+					<div class="stroop-instructions">Selecciona el COLOR de la tinta, no la palabra</div>
 					<div class="stroop-buttons">
 						<button class="stroop-btn" data-color="rojo" style="--btn-color: #E53935">Rojo</button>
 						<button class="stroop-btn" data-color="azul" style="--btn-color: #1E88E5">Azul</button>
@@ -279,6 +285,12 @@ import Layout from '../layouts/Layout.astro';
 
 			document.getElementById('board').innerHTML = `
 				<div class="whack-container">
+					<div class="game-info-box">
+						<h3>¿Qué debes hacer?</h3>
+						<p>Toca el <strong>objetivo con la persona</strong> cuando aparezca.</p>
+						<p class="warning-text">⚠️ Ignora las X rojas (son distractores)</p>
+						<p class="eval-info">Evalúa: Atención sostenida y tiempo de reacción</p>
+					</div>
 					<div class="whack-grid" id="whackGrid"></div>
 					<div class="whack-progress">Objetivos: <span id="whackPlayed">0</span>/${state.whackData.rounds}</div>
 				</div>
@@ -392,6 +404,12 @@ import Layout from '../layouts/Layout.astro';
 
 			document.getElementById('board').innerHTML = `
 				<div class="nav-container">
+					<div class="game-info-box">
+						<h3>¿Qué debes hacer?</h3>
+						<p>Ayuda al jugador <strong>★</strong> a llegar a la bandera <strong>⚑</strong></p>
+						<p>Haz clic en las casillas adyacentes para moverte.</p>
+						<p class="eval-info">Evalúa: Orientación espacial y memoria</p>
+					</div>
 					<div class="nav-grid" id="navGrid"></div>
 					<div class="nav-info">Nivel: <span id="navLevel">1</span>/${state.navData.maxLevel}</div>
 				</div>
@@ -1046,6 +1064,42 @@ import Layout from '../layouts/Layout.astro';
 			padding: 20px;
 		}
 
+		.game-info-box {
+			background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+			border: 2px solid #2196f3;
+			border-radius: 12px;
+			padding: 16px;
+			margin-bottom: 20px;
+			text-align: left;
+		}
+
+		.game-info-box h3 {
+			font-family: var(--font-display);
+			font-size: 16px;
+			color: #1565c0;
+			margin-bottom: 8px;
+		}
+
+		.game-info-box p {
+			font-size: 14px;
+			color: #333;
+			margin-bottom: 6px;
+		}
+
+		.warning-text {
+			color: #c62828 !important;
+			font-weight: 600;
+		}
+
+		.eval-info {
+			font-size: 12px !important;
+			color: #666 !important;
+			font-style: italic;
+			margin-top: 8px;
+			border-top: 1px solid #ccc;
+			padding-top: 8px;
+		}
+
 		.stroop-word {
 			font-size: 64px;
 			font-weight: 700;
@@ -1088,6 +1142,10 @@ import Layout from '../layouts/Layout.astro';
 		.stroop-progress {
 			font-size: 16px;
 			color: var(--text-muted);
+		}
+
+		.whack-container {
+			text-align: center;
 		}
 
 		.stroop-result, .whack-result, .nav-result {
