@@ -256,6 +256,7 @@ import Layout from '../layouts/Layout.astro';
 						<div class="result-item"><span>Errores:</span><span>${state.stroopData.errors}</span></div>
 						<div class="result-item"><span>Tiempo medio:</span><span>${Math.round(state.stroopData.reactionTimes.reduce((a,b)=>a+b,0)/state.stroopData.reactionTimes.length)}ms</span></div>
 					</div>
+					<a href="/games" class="btn btn-outline">Volver a Juegos</a>
 				</div>
 			`;
 			showMessage('¡Completado! Guardando resultados...', 'success');
@@ -369,6 +370,7 @@ import Layout from '../layouts/Layout.astro';
 						<div class="result-item"><span>Errores:</span><span>${data.errors}</span></div>
 						<div class="result-item"><span>Tiempo medio:</span><span>${Math.round(data.reactionTimes.reduce((a,b)=>a+b,0)/(data.reactionTimes.length||1))}ms</span></div>
 					</div>
+					<a href="/games" class="btn btn-outline">Volver a Juegos</a>
 				</div>
 			`;
 			showMessage('¡Completado! Guardando resultados...', 'success');
@@ -472,6 +474,7 @@ import Layout from '../layouts/Layout.astro';
 						<div class="result-item"><span>Nivel alcanzado:</span><span>${data.level - 1}</span></div>
 						<div class="result-item"><span>Movimientos:</span><span>${data.moves}</span></div>
 					</div>
+					<a href="/games" class="btn btn-outline">Volver a Juegos</a>
 				</div>
 			`;
 			showMessage('¡Completado! Guardando resultados...', 'success');
@@ -1103,6 +1106,10 @@ import Layout from '../layouts/Layout.astro';
 			display: flex;
 			flex-direction: column;
 			gap: 12px;
+		}
+
+		.stroop-result .btn, .whack-result .btn, .nav-result .btn {
+			margin-top: 20px;
 		}
 
 		.result-stats .result-item {
