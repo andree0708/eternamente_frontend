@@ -1,0 +1,481 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="EternaMente - Historial">
+	<div class="history-container">
+		<header class="history-header">
+			<div class="header-left">
+				<a href="/games" class="back-link">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M19 12H5M12 19l-7-7 7-7"/>
+					</svg>
+					Volver a Juegos
+				</a>
+			</div>
+			<div class="user-info">
+				<div class="user-avatar">
+					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<circle cx="12" cy="8" r="4"/>
+						<path d="M4 20c0-4 4-6 8-6s8 2 8 6"/>
+					</svg>
+				</div>
+				<span id="userName">Usuario</span>
+			</div>
+		</header>
+
+		<main class="history-main">
+			<div class="history-title fade-in">
+				<h1>Mi Historial de Evaluaciones</h1>
+				<p>Todas tus partidas y análisis de juegos cognitivos</p>
+			</div>
+
+			<div id="historyList" class="history-list fade-in"></div>
+			<div id="loadingHistory" class="loading-state">
+				<div class="spinner"></div>
+				<p>Cargando historial...</p>
+			</div>
+			<div id="emptyHistory" class="empty-state hidden">
+				<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+					<circle cx="12" cy="12" r="10"/>
+					<path d="M12 6v6l4 2"/>
+				</svg>
+				<h3>No hay evaluaciones aún</h3>
+				<p>Completa una partida para ver tu historial aquí</p>
+				<a href="/games" class="btn btn-primary">Ir a Juegos</a>
+			</div>
+		</main>
+	</div>
+
+	<script>
+		const state = {
+			token: localStorage.getItem('eternamente_token') || '',
+			user: JSON.parse(localStorage.getItem('eternamente_user') || 'null')
+		};
+
+		if (!state.token || !state.user) {
+			window.location.href = '/';
+		}
+
+		document.getElementById('userName').textContent = state.user.fullName || state.user.email;
+
+		async function api(endpoint, method, body) {
+			const headers = { 'Content-Type': 'application/json' };
+			if (state.token) {
+				headers.Authorization = `Bearer ${state.token}`;
+			}
+			let baseUrl = import.meta.env.PUBLIC_API_URL;
+			baseUrl = baseUrl.replace(/\/+$/, '');
+			const url = `${baseUrl}${endpoint}`;
+			const resp = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+			const text = await resp.text();
+			let json;
+			try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
+			if (!resp.ok) throw new Error(json.message || `Error ${resp.status}`);
+			return json;
+		}
+
+		function escapeHtml(text) {
+			return String(text)
+				.replace(/&/g, '&amp;')
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/"/g, '&quot;')
+				.replace(/'/g, '&#039;');
+		}
+
+		function getGameInfo(gameType) {
+			const games = {
+				memory: { name: 'Memoria de Pares', icon: '🧠', color: '#667eea' },
+				stroop: { name: 'Test de Stroop', icon: '🎨', color: '#f093fb' },
+				navigation: { name: 'Navegación Espacial', icon: '🧭', color: '#4facfe' },
+				whackamole: { name: 'Whack-a-Mole', icon: '🐹', color: '#fa709a' }
+			};
+			return games[gameType] || { name: 'Juego', icon: '🎮', color: '#666' };
+		}
+
+		function formatDate(dateStr) {
+			const date = new Date(dateStr);
+			return date.toLocaleDateString('es-ES', { 
+				day: 'numeric', 
+				month: 'short', 
+				year: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit'
+			});
+		}
+
+		async function loadHistory() {
+			document.getElementById('loadingHistory').classList.add('hidden');
+			try {
+				const assessments = await api('/api/assessments', 'GET');
+				assessments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+				if (assessments.length === 0) {
+					document.getElementById('emptyHistory').classList.remove('hidden');
+					return;
+				}
+
+				document.getElementById('historyList').innerHTML = assessments.map(a => {
+					const game = getGameInfo(a.metrics?.gameType);
+					const riskPercent = (a.riskScore * 100).toFixed(0);
+					const isRisk = a.predictedDcl;
+					const riskClass = isRisk ? 'risk' : 'normal';
+					
+					return `
+						<div class="history-card" style="--game-color: ${game.color}">
+							<div class="card-header">
+								<div class="game-badge">
+									<span class="game-icon">${game.icon}</span>
+									<span class="game-name">${game.name}</span>
+								</div>
+								<span class="risk-badge ${riskClass}">${isRisk ? '⚠️ Riesgo' : '✅ Normal'}</span>
+							</div>
+							<div class="card-date">${formatDate(a.createdAt)}</div>
+							<div class="card-metrics">
+								<div class="metric">
+									<span class="metric-value">${riskPercent}%</span>
+									<span class="metric-label">Riesgo</span>
+								</div>
+								${a.metrics?.accuracy !== undefined ? `
+								<div class="metric">
+									<span class="metric-value">${(a.metrics.accuracy * 100).toFixed(0)}%</span>
+									<span class="metric-label">Precisión</span>
+								</div>
+								` : ''}
+								${a.metrics?.averageReactionTimeMs ? `
+								<div class="metric">
+									<span class="metric-value">${Math.round(a.metrics.averageReactionTimeMs)}ms</span>
+									<span class="metric-label">Tiempo</span>
+								</div>
+								` : ''}
+								${a.metrics?.correct !== undefined ? `
+								<div class="metric">
+									<span class="metric-value">${a.metrics.correct}</span>
+									<span class="metric-label">Aciertos</span>
+								</div>
+								` : ''}
+								${a.metrics?.achievedLevel !== undefined ? `
+								<div class="metric">
+									<span class="metric-value">${a.metrics.achievedLevel}</span>
+									<span class="metric-label">Nivel</span>
+								</div>
+								` : ''}
+							</div>
+							<button class="btn-view-analysis" data-id="${a.id}">Ver Análisis Detallado</button>
+						</div>
+					`;
+				}).join('');
+
+				document.querySelectorAll('.btn-view-analysis').forEach(btn => {
+					btn.addEventListener('click', () => showAnalysis(btn.dataset.id));
+				});
+
+			} catch (err) {
+				document.getElementById('historyList').innerHTML = `
+					<div class="error-state">
+						<p>Error al cargar el historial: ${escapeHtml(err.message)}</p>
+						<button class="btn btn-outline" onclick="loadHistory()">Reintentar</button>
+					</div>
+				`;
+			}
+		}
+
+		async function showAnalysis(id) {
+			const card = document.querySelector(`[data-id="${id}"]`).closest('.history-card');
+			const existingDetail = card.querySelector('.analysis-detail');
+			if (existingDetail) {
+				existingDetail.remove();
+				return;
+			}
+
+			card.innerHTML += '<div class="loading-analysis">Cargando análisis...</div>';
+
+			try {
+				const detailed = await api(`/api/assessments/${id}/analysis`, 'GET');
+				const analysisHtml = `
+					<div class="analysis-detail">
+						<h4>📊 Análisis con IA</h4>
+						<div class="analysis-text">${escapeHtml(detailed.analysis || 'Sin análisis disponible').replace(/\n/g, '<br/>')}</div>
+						<button class="btn-close-analysis" onclick="this.parentElement.remove()">Cerrar</button>
+					</div>
+				`;
+				card.querySelector('.loading-analysis')?.remove();
+				card.innerHTML += analysisHtml;
+			} catch (err) {
+				card.querySelector('.loading-analysis').remove();
+				card.innerHTML += '<div class="error-analysis">No se pudo cargar el análisis</div>';
+			}
+		}
+
+		loadHistory();
+	</script>
+
+	<style>
+		.history-container {
+			min-height: 100vh;
+			background: linear-gradient(135deg, #FAF8F5 0%, #F5F0E8 100%);
+		}
+
+		.history-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 16px 24px;
+			background: white;
+			box-shadow: var(--shadow-sm);
+		}
+
+		.back-link {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			color: var(--primary);
+			text-decoration: none;
+			font-weight: 500;
+			transition: color 0.2s;
+		}
+
+		.back-link:hover {
+			color: var(--accent);
+		}
+
+		.user-info {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+		}
+
+		.user-avatar {
+			width: 40px;
+			height: 40px;
+			border-radius: 50%;
+			background: var(--accent);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			color: white;
+		}
+
+		.history-main {
+			max-width: 800px;
+			margin: 0 auto;
+			padding: 32px 24px;
+		}
+
+		.history-title {
+			text-align: center;
+			margin-bottom: 32px;
+		}
+
+		.history-title h1 {
+			font-family: var(--font-display);
+			font-size: 28px;
+			color: var(--primary);
+			margin-bottom: 8px;
+		}
+
+		.history-title p {
+			color: var(--text-muted);
+		}
+
+		.history-list {
+			display: flex;
+			flex-direction: column;
+			gap: 16px;
+		}
+
+		.history-card {
+			background: white;
+			border-radius: var(--radius-lg);
+			padding: 20px;
+			box-shadow: var(--shadow-md);
+			border-left: 4px solid var(--game-color, #667eea);
+		}
+
+		.card-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 12px;
+		}
+
+		.game-badge {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		.game-icon {
+			font-size: 24px;
+		}
+
+		.game-name {
+			font-weight: 600;
+			color: var(--primary);
+		}
+
+		.risk-badge {
+			padding: 4px 12px;
+			border-radius: 20px;
+			font-size: 12px;
+			font-weight: 600;
+		}
+
+		.risk-badge.risk {
+			background: rgba(229, 62, 62, 0.1);
+			color: var(--error);
+		}
+
+		.risk-badge.normal {
+			background: rgba(56, 161, 105, 0.1);
+			color: var(--success);
+		}
+
+		.card-date {
+			font-size: 13px;
+			color: var(--text-muted);
+			margin-bottom: 16px;
+		}
+
+		.card-metrics {
+			display: flex;
+			gap: 24px;
+			flex-wrap: wrap;
+			margin-bottom: 16px;
+		}
+
+		.metric {
+			text-align: center;
+		}
+
+		.metric-value {
+			display: block;
+			font-size: 20px;
+			font-weight: 700;
+			color: var(--primary);
+		}
+
+		.metric-label {
+			font-size: 11px;
+			color: var(--text-muted);
+			text-transform: uppercase;
+		}
+
+		.btn-view-analysis {
+			width: 100%;
+			padding: 12px;
+			background: var(--bg-cream);
+			border: 1px solid var(--border);
+			border-radius: var(--radius-sm);
+			color: var(--primary);
+			font-weight: 500;
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+
+		.btn-view-analysis:hover {
+			background: var(--primary);
+			color: white;
+		}
+
+		.loading-state, .empty-state {
+			text-align: center;
+			padding: 60px 20px;
+		}
+
+		.spinner {
+			width: 40px;
+			height: 40px;
+			border: 3px solid var(--border);
+			border-top-color: var(--primary);
+			border-radius: 50%;
+			animation: spin 1s linear infinite;
+			margin: 0 auto 16px;
+		}
+
+		@keyframes spin {
+			to { transform: rotate(360deg); }
+		}
+
+		.empty-state svg {
+			color: var(--text-muted);
+			margin-bottom: 16px;
+		}
+
+		.empty-state h3 {
+			color: var(--primary);
+			margin-bottom: 8px;
+		}
+
+		.empty-state p {
+			color: var(--text-muted);
+			margin-bottom: 20px;
+		}
+
+		.analysis-detail {
+			margin-top: 16px;
+			padding: 16px;
+			background: var(--bg-cream);
+			border-radius: var(--radius-sm);
+		}
+
+		.analysis-detail h4 {
+			font-size: 14px;
+			color: var(--primary);
+			margin-bottom: 12px;
+		}
+
+		.analysis-text {
+			font-size: 13px;
+			line-height: 1.6;
+			color: #333;
+			margin-bottom: 12px;
+		}
+
+		.btn-close-analysis {
+			padding: 8px 16px;
+			background: var(--border);
+			border: none;
+			border-radius: var(--radius-sm);
+			color: var(--text-muted);
+			cursor: pointer;
+			font-size: 12px;
+		}
+
+		.loading-analysis {
+			text-align: center;
+			padding: 16px;
+			color: var(--text-muted);
+		}
+
+		.error-state {
+			text-align: center;
+			padding: 40px;
+			color: var(--error);
+		}
+
+		.error-analysis {
+			margin-top: 12px;
+			padding: 12px;
+			background: rgba(229, 62, 62, 0.1);
+			border-radius: var(--radius-sm);
+			color: var(--error);
+			font-size: 13px;
+		}
+
+		.hidden {
+			display: none !important;
+		}
+
+		@media (max-width: 768px) {
+			.history-main {
+				padding: 20px 16px;
+			}
+
+			.card-metrics {
+				gap: 16px;
+			}
+		}
+	</style>
+</Layout>
