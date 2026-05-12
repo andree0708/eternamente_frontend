@@ -416,30 +416,30 @@ import Layout from '../layouts/Layout.astro';
 				currentPos: 12,
 				targetPos: 0,
 				moves: 0,
-				gridSize: 5,
-				gameStarted: false
+				gridSize: 4
 			};
 
 			document.getElementById('board').innerHTML = `
 				<div class="nav-container">
-					<div class="game-info-box">
-						<h3>¿Qué debes hacer?</h3>
-						<p>Ayuda al jugador <strong>★</strong> a llegar a la bandera <strong>⚑</strong></p>
-						<p>Toca las flechas para moverte hacia la bandera.</p>
-						<p class="eval-info">Evalúa: Orientación espacial y memoria</p>
+					<div class="nav-legend">
+						<div class="legend-item"><span class="legend-player">★</span> Tú</div>
+						<div class="legend-item"><span class="legend-goal">⚑</span> Meta</div>
 					</div>
 					<div class="nav-game-area">
 						<div class="nav-grid" id="navGrid"></div>
 						<div class="nav-controls">
-							<div class="nav-arrow nav-up" data-dir="up">↑</div>
+							<button class="nav-arrow nav-up" data-dir="up">▲</button>
 							<div class="nav-arrow-row">
-								<div class="nav-arrow nav-left" data-dir="left">←</div>
-								<div class="nav-arrow nav-right" data-dir="right">→</div>
+								<button class="nav-arrow nav-left" data-dir="left">◀</button>
+								<button class="nav-arrow nav-right" data-dir="right">▶</button>
 							</div>
-							<div class="nav-arrow nav-down" data-dir="down">↓</div>
+							<button class="nav-arrow nav-down" data-dir="down">▼</button>
 						</div>
 					</div>
-					<div class="nav-info">Nivel: <span id="navLevel">1</span>/${state.navData.maxLevel}</div>
+					<div class="nav-info">
+						<span class="nav-level">Nivel <span id="navLevel">1</span>/${state.navData.maxLevel}</span>
+						<span class="nav-moves">Movimientos: <span id="navMoves">0</span></span>
+					</div>
 				</div>
 			`;
 
@@ -466,6 +466,7 @@ import Layout from '../layouts/Layout.astro';
 				targetCol = Math.floor(Math.random() * data.gridSize);
 			} while (targetRow === startRow && targetCol === startCol);
 			data.targetPos = targetRow * data.gridSize + targetCol;
+			data.moves = 0;
 
 			for (let i = 0; i < data.gridSize * data.gridSize; i++) {
 				const cell = document.createElement('div');
@@ -474,16 +475,17 @@ import Layout from '../layouts/Layout.astro';
 
 				if (i === data.currentPos) {
 					cell.classList.add('player');
-					cell.innerHTML = '★';
+					cell.innerHTML = '<span class="player-icon">★</span>';
 				} else if (i === data.targetPos) {
 					cell.classList.add('goal');
-					cell.innerHTML = '⚑';
+					cell.innerHTML = '<span class="goal-icon">⚑</span>';
 				}
 
 				grid.appendChild(cell);
 			}
 
 			document.getElementById('navLevel').textContent = data.level;
+			document.getElementById('navMoves').textContent = data.moves;
 			updateNavArrows();
 		}
 
@@ -492,10 +494,10 @@ import Layout from '../layouts/Layout.astro';
 			const row = Math.floor(data.currentPos / data.gridSize);
 			const col = data.currentPos % data.gridSize;
 
-			document.querySelector('.nav-up').style.opacity = row > 0 ? '1' : '0.3';
-			document.querySelector('.nav-down').style.opacity = row < data.gridSize - 1 ? '1' : '0.3';
-			document.querySelector('.nav-left').style.opacity = col > 0 ? '1' : '0.3';
-			document.querySelector('.nav-right').style.opacity = col < data.gridSize - 1 ? '1' : '0.3';
+			document.querySelector('.nav-up').classList.toggle('disabled', row === 0);
+			document.querySelector('.nav-down').classList.toggle('disabled', row === data.gridSize - 1);
+			document.querySelector('.nav-left').classList.toggle('disabled', col === 0);
+			document.querySelector('.nav-right').classList.toggle('disabled', col === data.gridSize - 1);
 		}
 
 		function handleNavMove(direction) {
@@ -518,22 +520,23 @@ import Layout from '../layouts/Layout.astro';
 			const cells = document.querySelectorAll('.nav-cell');
 			cells.forEach((cell, i) => {
 				cell.classList.remove('player');
-				cell.innerHTML = '';
+				if (i !== data.targetPos) cell.innerHTML = '';
 				if (i === data.currentPos) {
 					cell.classList.add('player');
-					cell.innerHTML = '★';
+					cell.innerHTML = '<span class="player-icon">★</span>';
 				}
 			});
 
+			document.getElementById('navMoves').textContent = data.moves;
 			updateNavArrows();
+			updateMetrics();
 
 			if (data.currentPos === data.targetPos) {
 				data.level++;
-				updateMetrics();
 				if (data.level > data.maxLevel) {
 					endNavigationGame();
 				} else {
-					setTimeout(() => startNavigationLevel(), 500);
+					setTimeout(() => startNavigationLevel(), 800);
 				}
 			}
 		}
@@ -1307,48 +1310,95 @@ import Layout from '../layouts/Layout.astro';
 			text-align: center;
 		}
 
+		.nav-legend {
+			display: flex;
+			justify-content: center;
+			gap: 24px;
+			margin-bottom: 20px;
+			padding: 12px;
+			background: #f5f5f5;
+			border-radius: 8px;
+		}
+
+		.legend-item {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			font-size: 14px;
+			font-weight: 500;
+		}
+
+		.legend-player {
+			display: inline-flex;
+			width: 32px;
+			height: 32px;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			border-radius: 6px;
+			align-items: center;
+			justify-content: center;
+			color: white;
+			font-size: 16px;
+		}
+
+		.legend-goal {
+			display: inline-flex;
+			width: 32px;
+			height: 32px;
+			background: linear-gradient(135deg, #ffd54f 0%, #ffb300 100%);
+			border-radius: 6px;
+			align-items: center;
+			justify-content: center;
+			color: white;
+			font-size: 16px;
+		}
+
 		.nav-game-area {
 			display: flex;
 			flex-direction: column;
 			align-items: center;
-			gap: 20px;
+			gap: 24px;
 		}
 
 		.nav-grid {
 			display: grid;
-			gap: 6px;
-			max-width: 350px;
-			margin: 0 auto;
+			gap: 8px;
+			padding: 16px;
+			background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+			border-radius: 16px;
+			box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 		}
 
 		.nav-cell {
-			aspect-ratio: 1;
-			background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
-			border-radius: 8px;
+			width: 64px;
+			height: 64px;
+			background: white;
+			border-radius: 12px;
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			font-size: 24px;
-			border: 2px solid transparent;
+			font-size: 28px;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 		}
 
 		.nav-cell.player {
 			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-			color: white;
-			box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+			box-shadow: 0 4px 16px rgba(102, 126, 234, 0.5);
+			animation: navPulse 0.5s ease-in-out;
 		}
 
 		.nav-cell.goal {
 			background: linear-gradient(135deg, #ffd54f 0%, #ffb300 100%);
-			color: white;
-			font-size: 28px;
+			animation: goalGlow 1s ease-in-out infinite;
 		}
 
-		.nav-info {
-			font-size: 18px;
-			color: var(--text-muted);
-			margin-top: 16px;
-			font-weight: 600;
+		@keyframes navPulse {
+			0%, 100% { transform: scale(1); }
+			50% { transform: scale(1.1); }
+		}
+
+		@keyframes goalGlow {
+			0%, 100% { box-shadow: 0 0 10px rgba(255, 213, 79, 0.5); }
+			50% { box-shadow: 0 0 20px rgba(255, 213, 79, 0.8); }
 		}
 
 		.nav-controls {
@@ -1360,38 +1410,59 @@ import Layout from '../layouts/Layout.astro';
 
 		.nav-arrow-row {
 			display: flex;
-			gap: 60px;
+			gap: 48px;
 		}
 
 		.nav-arrow {
-			width: 56px;
-			height: 56px;
+			width: 60px;
+			height: 60px;
 			border-radius: 50%;
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
 			color: white;
-			font-size: 28px;
+			font-size: 24px;
 			display: flex;
 			align-items: center;
 			justify-content: center;
 			cursor: pointer;
-			transition: all 0.2s;
-			box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+			transition: all 0.15s;
+			box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
 			user-select: none;
+			border: none;
 		}
 
 		.nav-arrow:hover {
 			transform: scale(1.1);
-			box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+			box-shadow: 0 6px 20px rgba(33, 150, 243, 0.5);
 		}
 
 		.nav-arrow:active {
 			transform: scale(0.95);
 		}
 
-		.nav-arrow[style*="0.3"] {
+		.nav-arrow.disabled {
 			background: #ccc;
-			cursor: not-allowed;
 			box-shadow: none;
+			cursor: not-allowed;
+			transform: none;
+		}
+
+		.nav-info {
+			display: flex;
+			justify-content: center;
+			gap: 32px;
+			margin-top: 16px;
+			font-size: 16px;
+		}
+
+		.nav-level, .nav-moves {
+			padding: 8px 16px;
+			background: #f5f5f5;
+			border-radius: 8px;
+			font-weight: 500;
+		}
+
+		.nav-level span, .nav-moves span {
+			color: #667eea;
 		}
 
 		/* Global styles for dynamically created elements */
