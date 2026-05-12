@@ -168,7 +168,7 @@ import Layout from '../layouts/Layout.astro';
 			initWhackamoleGame();
 		} else if (state.gameType === 'navigation') {
 			initNavigationGame();
-		} else if (gameType !== 'memory') {
+		} else if (state.gameType !== 'memory') {
 			document.querySelector('.game-board').style.display = 'none';
 			document.getElementById('board').innerHTML = '<div class="game-coming-soon"><p>Este juego está en desarrollo</p><a href="/games" class="btn btn-primary">Volver a juegos</a></div>';
 		}
@@ -794,7 +794,9 @@ import Layout from '../layouts/Layout.astro';
 			});
 		});
 
-		newGame();
+		if (state.gameType === 'memory') {
+			newGame();
+		}
 
 		document.getElementById('viewResultsBtn').classList.add('hidden');
 
