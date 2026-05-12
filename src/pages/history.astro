@@ -126,8 +126,11 @@ import Layout from '../layouts/Layout.astro';
 						<div class="history-card" style="--game-color: ${game.color}">
 							<div class="card-header">
 								<div class="game-badge">
-									<span class="game-icon">${game.icon}</span>
-									<span class="game-name">${game.name}</span>
+									<span class="game-icon-large">${game.icon}</span>
+									<div class="game-info">
+										<span class="game-name">${game.name}</span>
+										<span class="game-type">${game.name}</span>
+									</div>
 								</div>
 								<span class="risk-badge ${riskClass}">${isRisk ? '⚠️ Riesgo' : '✅ Normal'}</span>
 							</div>
@@ -303,16 +306,38 @@ import Layout from '../layouts/Layout.astro';
 		.game-badge {
 			display: flex;
 			align-items: center;
-			gap: 10px;
+			gap: 12px;
 		}
 
 		.game-icon {
-			font-size: 24px;
+			font-size: 20px;
+		}
+
+		.game-icon-large {
+			font-size: 36px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			width: 56px;
+			height: 56px;
+			background: var(--bg-cream);
+			border-radius: 12px;
+		}
+
+		.game-info {
+			display: flex;
+			flex-direction: column;
 		}
 
 		.game-name {
 			font-weight: 600;
 			color: var(--primary);
+			font-size: 16px;
+		}
+
+		.game-type {
+			font-size: 12px;
+			color: var(--text-muted);
 		}
 
 		.risk-badge {
