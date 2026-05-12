@@ -162,7 +162,7 @@ import Layout from '../layouts/Layout.astro';
 				localStorage.setItem('eternamente_user', JSON.stringify(userData));
 				showMessage('¡Bienvenido! Redirigiendo...', 'success');
 				console.log('Redirigiendo a /game...');
-				window.location.href = '/game';
+				window.location.href = '/games';
 			} catch (err) {
 				console.error('Error login:', err);
 				showMessage('Credenciales incorrectas. Intenta de nuevo.', 'error');
@@ -205,7 +205,7 @@ import Layout from '../layouts/Layout.astro';
 				localStorage.setItem('eternamente_user', JSON.stringify(userData));
 				showMessage('¡Cuenta creada! Redirigiendo...', 'success');
 				console.log('Redirigiendo a /game...');
-				window.location.href = '/game';
+				window.location.href = '/games';
 			} catch (err) {
 				console.error('Error registro:', err);
 				showMessage('Error al crear cuenta: ' + err.message, 'error');
