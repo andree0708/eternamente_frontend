@@ -30,6 +30,11 @@ import Layout from '../layouts/Layout.astro';
 				<p>Todas tus partidas y análisis de juegos cognitivos</p>
 			</div>
 
+			<div id="evolutionCard" class="evolution-card fade-in hidden">
+				<h2>Tu evolución</h2>
+				<div id="evolutionStats" class="evolution-stats"></div>
+			</div>
+
 			<div id="historyList" class="history-list fade-in"></div>
 			<div id="loadingHistory" class="loading-state">
 				<div class="spinner"></div>
@@ -48,6 +53,9 @@ import Layout from '../layouts/Layout.astro';
 	</div>
 
 	<script>
+		import { api } from '../lib/api.ts';
+		import { getGameInfo } from '../lib/games.ts';
+
 		const state = {
 			token: localStorage.getItem('eternamente_token') || '',
 			user: JSON.parse(localStorage.getItem('eternamente_user') || 'null')
@@ -59,22 +67,6 @@ import Layout from '../layouts/Layout.astro';
 
 		document.getElementById('userName').textContent = state.user.fullName || state.user.email;
 
-		async function api(endpoint, method, body) {
-			const headers = { 'Content-Type': 'application/json' };
-			if (state.token) {
-				headers.Authorization = `Bearer ${state.token}`;
-			}
-			let baseUrl = import.meta.env.PUBLIC_API_URL;
-			baseUrl = baseUrl.replace(/\/+$/, '');
-			const url = `${baseUrl}${endpoint}`;
-			const resp = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
-			const text = await resp.text();
-			let json;
-			try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
-			if (!resp.ok) throw new Error(json.message || `Error ${resp.status}`);
-			return json;
-		}
-
 		function escapeHtml(text) {
 			return String(text)
 				.replace(/&/g, '&amp;')
@@ -82,21 +74,6 @@ import Layout from '../layouts/Layout.astro';
 				.replace(/>/g, '&gt;')
 				.replace(/"/g, '&quot;')
 				.replace(/'/g, '&#039;');
-		}
-
-		function getGameInfo(a) {
-			const gameType = a.metrics?.gameType;
-			
-			if (gameType === 'memory') return { name: 'Memoria de Pares', icon: '🧠', color: '#667eea' };
-			if (gameType === 'stroop') return { name: 'Test de Stroop', icon: '🎨', color: '#f093fb' };
-			if (gameType === 'navigation') return { name: 'Navegación Espacial', icon: '🧭', color: '#4facfe' };
-			if (gameType === 'whackamole') return { name: 'Whack-a-Mole', icon: '🐹', color: '#fa709a' };
-			
-			if (a.metrics?.matchedPairs !== undefined) return { name: 'Memoria de Pares', icon: '🧠', color: '#667eea' };
-			if (a.metrics?.correct !== undefined && a.metrics?.averageReactionTimeMs !== undefined) return { name: 'Test de Stroop', icon: '🎨', color: '#f093fb' };
-			if (a.metrics?.achievedLevel !== undefined) return { name: 'Navegación Espacial', icon: '🧭', color: '#4facfe' };
-			
-			return { name: 'Juego Cognitivo', icon: '🎮', color: '#666' };
 		}
 
 		function formatDate(dateStr) {
@@ -110,8 +87,46 @@ import Layout from '../layouts/Layout.astro';
 			});
 		}
 
+		async function loadEvolution() {
+			try {
+				const summary = await api('/api/assessments/summary', 'GET');
+				if (!summary || summary.totalSessions === 0) return;
+
+				document.getElementById('evolutionCard').classList.remove('hidden');
+				const avgRisk = (summary.avgRiskScore * 100).toFixed(0);
+				const avgAcc = summary.avgAccuracy != null ? `${(summary.avgAccuracy * 100).toFixed(0)}%` : '—';
+				document.getElementById('evolutionStats').innerHTML = `
+					<div class="evo-stat">
+						<span class="evo-value">${summary.totalSessions}</span>
+						<span class="evo-label">Partidas totales</span>
+					</div>
+					<div class="evo-stat">
+						<span class="evo-value">${avgRisk}%</span>
+						<span class="evo-label">Riesgo promedio</span>
+					</div>
+					<div class="evo-stat">
+						<span class="evo-value">${avgAcc}</span>
+						<span class="evo-label">Precisión media</span>
+					</div>
+					<div class="evo-stat">
+						<span class="evo-value">${summary.memorySessions + summary.stroopSessions + summary.navigationSessions + summary.whackamoleSessions}</span>
+						<span class="evo-label">Sesiones registradas</span>
+					</div>
+					<div class="evo-games">
+						<span>🧠 ${summary.memorySessions}</span>
+						<span>🎨 ${summary.stroopSessions}</span>
+						<span>🧭 ${summary.navigationSessions}</span>
+						<span>🐹 ${summary.whackamoleSessions}</span>
+					</div>
+				`;
+			} catch {
+				/* resumen opcional */
+			}
+		}
+
 		async function loadHistory() {
 			document.getElementById('loadingHistory').classList.add('hidden');
+			await loadEvolution();
 			try {
 				const assessments = await api('/api/assessments', 'GET');
 				assessments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -126,6 +141,7 @@ import Layout from '../layouts/Layout.astro';
 					const riskPercent = (a.riskScore * 100).toFixed(0);
 					const isRisk = a.predictedDcl;
 					const riskClass = isRisk ? 'risk' : 'normal';
+					const m = a.metrics || {};
 					
 					return `
 						<div class="history-card" style="--game-color: ${game.color}">
@@ -134,7 +150,7 @@ import Layout from '../layouts/Layout.astro';
 									<span class="game-icon-large">${game.icon}</span>
 									<div class="game-info">
 										<span class="game-name">${game.name}</span>
-										<span class="game-type">Juego #${a.id?.toString().slice(-4) || ''}</span>
+										<span class="game-type">${game.evaluates}</span>
 									</div>
 								</div>
 								<span class="risk-badge ${riskClass}">${isRisk ? '⚠️ Riesgo' : '✅ Normal'}</span>
@@ -145,27 +161,33 @@ import Layout from '../layouts/Layout.astro';
 									<span class="metric-value">${riskPercent}%</span>
 									<span class="metric-label">Riesgo</span>
 								</div>
-								${a.metrics?.accuracy !== undefined ? `
+								${m.accuracy !== undefined ? `
 								<div class="metric">
-									<span class="metric-value">${(a.metrics.accuracy * 100).toFixed(0)}%</span>
+									<span class="metric-value">${(m.accuracy * 100).toFixed(0)}%</span>
 									<span class="metric-label">Precisión</span>
 								</div>
 								` : ''}
-								${a.metrics?.averageReactionTimeMs ? `
+								${m.averageReactionTimeMs ? `
 								<div class="metric">
-									<span class="metric-value">${Math.round(a.metrics.averageReactionTimeMs)}ms</span>
-									<span class="metric-label">Tiempo</span>
+									<span class="metric-value">${Math.round(m.averageReactionTimeMs)}ms</span>
+									<span class="metric-label">Reacción</span>
 								</div>
 								` : ''}
-								${a.metrics?.correct !== undefined ? `
+								${m.correct !== undefined ? `
 								<div class="metric">
-									<span class="metric-value">${a.metrics.correct}</span>
+									<span class="metric-value">${m.correct}</span>
 									<span class="metric-label">Aciertos</span>
 								</div>
 								` : ''}
-								${a.metrics?.achievedLevel !== undefined ? `
+								${m.falsePositives !== undefined ? `
 								<div class="metric">
-									<span class="metric-value">${a.metrics.achievedLevel}</span>
+									<span class="metric-value">${m.falsePositives}</span>
+									<span class="metric-label">Falsos +</span>
+								</div>
+								` : ''}
+								${m.achievedLevel !== undefined ? `
+								<div class="metric">
+									<span class="metric-value">${m.achievedLevel}/${m.maxLevel || 5}</span>
 									<span class="metric-label">Nivel</span>
 								</div>
 								` : ''}
@@ -211,8 +233,8 @@ import Layout from '../layouts/Layout.astro';
 				card.querySelector('.loading-analysis')?.remove();
 				card.innerHTML += analysisHtml;
 			} catch (err) {
-				card.querySelector('.loading-analysis').remove();
-				card.innerHTML += '<div class="error-analysis">No se pudo cargar el análisis</div>';
+				card.querySelector('.loading-analysis')?.remove();
+				card.innerHTML += `<div class="error-analysis">No se pudo cargar el análisis: ${escapeHtml(err.message)}</div>`;
 			}
 		}
 
@@ -287,6 +309,52 @@ import Layout from '../layouts/Layout.astro';
 			color: var(--text-muted);
 		}
 
+		.evolution-card {
+			background: linear-gradient(135deg, #2D3748 0%, #4A5568 100%);
+			color: white;
+			border-radius: var(--radius-lg);
+			padding: 24px;
+			margin-bottom: 24px;
+			box-shadow: var(--shadow-lg);
+		}
+
+		.evolution-card h2 {
+			font-family: var(--font-display);
+			font-size: 20px;
+			margin-bottom: 16px;
+		}
+
+		.evolution-stats {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 20px;
+			align-items: flex-end;
+		}
+
+		.evo-stat {
+			text-align: center;
+			min-width: 80px;
+		}
+
+		.evo-value {
+			display: block;
+			font-size: 28px;
+			font-weight: 700;
+		}
+
+		.evo-label {
+			font-size: 11px;
+			opacity: 0.85;
+			text-transform: uppercase;
+		}
+
+		.evo-games {
+			display: flex;
+			gap: 16px;
+			font-size: 18px;
+			margin-left: auto;
+		}
+
 		.history-list {
 			display: flex;
 			flex-direction: column;
@@ -314,10 +382,6 @@ import Layout from '../layouts/Layout.astro';
 			gap: 12px;
 		}
 
-		.game-icon {
-			font-size: 20px;
-		}
-
 		.game-icon-large {
 			font-size: 36px;
 			display: flex;
@@ -343,6 +407,7 @@ import Layout from '../layouts/Layout.astro';
 		.game-type {
 			font-size: 12px;
 			color: var(--text-muted);
+			max-width: 280px;
 		}
 
 		.risk-badge {
@@ -505,6 +570,12 @@ import Layout from '../layouts/Layout.astro';
 
 			.card-metrics {
 				gap: 16px;
+			}
+
+			.evo-games {
+				margin-left: 0;
+				width: 100%;
+				justify-content: center;
 			}
 		}
 	</style>
