@@ -53,6 +53,13 @@ import Layout from '../layouts/Layout.astro';
 					</div>
 				</div>
 
+				<div id="memoryInstructions" class="game-info-box hidden">
+					<h3>¿Qué debes hacer?</h3>
+					<p>Toca las tarjetas para voltearlas y <strong>encuentra todos los pares</strong> iguales.</p>
+					<p>Memoriza la posición de cada símbolo con el menor número de movimientos posible.</p>
+					<p class="eval-info">Evalúa: Memoria de trabajo y atención sostenida</p>
+				</div>
+
 				<div id="board" class="game-board"></div>
 
 				<div class="game-actions">
@@ -68,8 +75,9 @@ import Layout from '../layouts/Layout.astro';
 				<div id="gameMessage" class="game-message"></div>
 			</div>
 
-			<div class="results-card fade-in" style="animation-delay: 0.2s;">
+			<div id="resultsCard" class="results-card fade-in hidden" style="animation-delay: 0.2s;">
 				<h2>Resultados de Evaluación</h2>
+				<p id="resultsHint" class="results-hint">Completa la partida para ver tu análisis</p>
 				<div class="results-tabs">
 					<button class="tab-result active" data-tab="current">Partida Actual</button>
 					<button class="tab-result" data-tab="history">Historial</button>
@@ -96,6 +104,9 @@ import Layout from '../layouts/Layout.astro';
 	</div>
 
 	<script>
+		import { api } from '../lib/api.ts';
+		import { getGameInfo } from '../lib/games.ts';
+
 		const urlParams = new URLSearchParams(window.location.search);
 		const gameType = urlParams.get('type') || 'memory';
 
@@ -113,8 +124,24 @@ import Layout from '../layouts/Layout.astro';
 			lockBoard: false,
 			cards: [],
 			difficulty: 'EASY',
-			loadingAnalysis: false
+			loadingAnalysis: false,
+			gameCompleted: false,
+			lastAssessmentId: null
 		};
+
+		const evaluatesText = {
+			memory: 'Memoria de trabajo, atención y velocidad de reconocimiento',
+			stroop: 'Control inhibitorio, flexibilidad cognitiva y velocidad de procesamiento',
+			navigation: 'Orientación espacial, memoria espacial y planificación de rutas',
+			whackamole: 'Control inhibitorio (Go/No-Go), tiempo de reacción y atención sostenida'
+		};
+
+		function revealResultsPanel() {
+			state.gameCompleted = true;
+			document.getElementById('resultsCard')?.classList.remove('hidden');
+			const hint = document.getElementById('resultsHint');
+			if (hint) hint.classList.add('hidden');
+		}
 
 		if (!state.token || !state.user) {
 			window.location.href = '/';
@@ -136,6 +163,10 @@ import Layout from '../layouts/Layout.astro';
 		};
 
 		document.querySelector('.game-title h1').textContent = gameTitle[state.gameType] || 'Juego';
+		const subtitle = document.querySelector('.game-title p');
+		if (subtitle) {
+			subtitle.innerHTML = `<span class="eval-badge">Qué evalúa:</span> ${evaluatesText[state.gameType] || 'Funciones cognitivas'}`;
+		}
 
 		const gameConfigs = {
 			memory: {
@@ -267,6 +298,7 @@ import Layout from '../layouts/Layout.astro';
 			`;
 			showMessage('¡Completado! Guardando resultados...', 'success');
 			document.getElementById('viewResultsBtn').classList.remove('hidden');
+			revealResultsPanel();
 			saveGameResults();
 		}
 
@@ -276,11 +308,13 @@ import Layout from '../layouts/Layout.astro';
 				played: 0,
 				correct: 0,
 				errors: 0,
+				falsePositives: 0,
 				startTime: null,
 				reactionTimes: [],
 				gridSize: 3,
 				showDuration: 1500,
-				currentTarget: null
+				currentTarget: null,
+				tutorialDone: false
 			};
 
 			document.getElementById('board').innerHTML = `
@@ -289,7 +323,12 @@ import Layout from '../layouts/Layout.astro';
 						<h3>¿Qué debes hacer?</h3>
 						<p>Cuando aparezca un <strong>🐹 hámster</strong>, tócalo lo más rápido posible.</p>
 						<p class="warning-text">⚠️ ¡CUIDADO! Si aparece una <strong>X</strong> NO la toques, es un distractor.</p>
-						<p class="eval-info">Evalúa: Atención sostenida y tiempo de reacción</p>
+						<p class="eval-info">Evalúa: Control inhibitorio (Go/No-Go), tiempo de reacción y atención sostenida</p>
+						<ol class="tutorial-steps">
+							<li>✅ Toca el hámster cuando aparezca</li>
+							<li>❌ No toques la X (distractor)</li>
+							<li>⏱️ Si no respondes a tiempo, cuenta como error</li>
+						</ol>
 					</div>
 					<div class="whack-grid" id="whackGrid"></div>
 					<div class="whack-progress">Aciertos: <span id="whackCorrect">0</span> | Errores: <span id="whackErrors">0</span> | <span id="whackPlayed">0</span>/${state.whackData.rounds}</div>
@@ -379,6 +418,7 @@ import Layout from '../layouts/Layout.astro';
 				setTimeout(() => nextWhackRound(), 400);
 			} else if (cell.classList.contains('distractor')) {
 				data.errors++;
+				data.falsePositives++;
 				data.played++;
 				data.currentTarget = null;
 				cell.classList.remove('distractor');
@@ -406,6 +446,7 @@ import Layout from '../layouts/Layout.astro';
 			`;
 			showMessage('¡Completado! Guardando resultados...', 'success');
 			document.getElementById('viewResultsBtn').classList.remove('hidden');
+			revealResultsPanel();
 			saveGameResults();
 		}
 
@@ -416,14 +457,21 @@ import Layout from '../layouts/Layout.astro';
 				currentPos: 12,
 				targetPos: 0,
 				moves: 0,
+				errors: 0,
 				gridSize: 4
 			};
 
 			document.getElementById('board').innerHTML = `
 				<div class="nav-container">
+					<div class="game-info-box">
+						<h3>¿Qué debes hacer?</h3>
+						<p>Usa las <strong>flechas</strong> para mover tu estrella <strong>★</strong> hasta la meta <strong>⚑</strong>.</p>
+						<p>Completa <strong>5 niveles</strong>. En cada nivel la meta está en un lugar distinto.</p>
+						<p class="eval-info">Evalúa: Orientación espacial y memoria de rutas (tipo Sea Hero Quest)</p>
+					</div>
 					<div class="nav-legend">
-						<div class="legend-item"><span class="legend-player">★</span> Tú</div>
-						<div class="legend-item"><span class="legend-goal">⚑</span> Meta</div>
+						<div class="legend-item"><span class="legend-player">★</span> Tú — posición actual</div>
+						<div class="legend-item"><span class="legend-goal">⚑</span> Meta — llévate aquí</div>
 					</div>
 					<div class="nav-game-area">
 						<div class="nav-grid" id="navGrid"></div>
@@ -555,6 +603,7 @@ import Layout from '../layouts/Layout.astro';
 			`;
 			showMessage('¡Completado! Guardando resultados...', 'success');
 			document.getElementById('viewResultsBtn').classList.remove('hidden');
+			revealResultsPanel();
 			saveGameResults();
 		}
 
@@ -681,6 +730,7 @@ import Layout from '../layouts/Layout.astro';
 				if (state.matchedPairs === state.totalPairs) {
 					showMessage('¡Completado! Guardando resultados...', 'success');
 					document.getElementById('viewResultsBtn').classList.remove('hidden');
+					revealResultsPanel();
 					saveGameResults();
 				}
 				return;
@@ -698,34 +748,13 @@ import Layout from '../layouts/Layout.astro';
 			}, 800);
 		}
 
-		async function api(endpoint, method, body) {
-			const headers = { 'Content-Type': 'application/json' };
-			console.log('Token actual:', state.token ? 'presente' : 'ausente');
-			if (state.token) {
-				headers.Authorization = `Bearer ${state.token}`;
-			}
-			console.log('API call:', method, endpoint, 'token:', state.token ? 'si' : 'no');
-			let baseUrl = import.meta.env.PUBLIC_API_URL;
-			baseUrl = baseUrl.replace(/\/+$/, '').replace(/\/+$/, '');
-			const url = `${baseUrl}${endpoint}`;
-			console.log('URL completa:', url);
-			const resp = await fetch(url, {
-				method,
-				headers,
-				body: body ? JSON.stringify(body) : undefined
-			});
-			console.log('Response status:', resp.status);
-			const text = await resp.text();
-			console.log('Response text:', text);
-			let json;
-			try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
-			if (!resp.ok) {
-				throw new Error(json.message || json.raw || `Error ${resp.status}`);
-			}
-			return json;
-		}
-
 		document.getElementById('newGameBtn').addEventListener('click', () => {
+			state.gameCompleted = false;
+			state.lastAssessmentId = null;
+			document.getElementById('viewResultsBtn').classList.add('hidden');
+			document.getElementById('resultsCard')?.classList.add('hidden');
+			document.getElementById('resultsHint')?.classList.remove('hidden');
+			document.getElementById('resultsContent').innerHTML = '';
 			if (state.gameType === 'memory') {
 				newGame();
 			} else if (state.gameType === 'stroop') {
@@ -782,6 +811,7 @@ import Layout from '../layouts/Layout.astro';
 					totalRounds: state.whackData.rounds,
 					correct: state.whackData.correct,
 					errors: state.whackData.errors,
+					falsePositives: state.whackData.falsePositives || 0,
 					accuracy: Number(accuracy.toFixed(4)),
 					averageReactionTimeMs: Number(avgReactionTime.toFixed(2))
 				};
@@ -796,7 +826,8 @@ import Layout from '../layouts/Layout.astro';
 			}
 
 			try {
-				await api('/api/assessments', 'POST', { age: 65, metrics });
+				const saved = await api('/api/assessments', 'POST', { age: 65, metrics });
+				state.lastAssessmentId = saved.id;
 				showMessage('Resultados guardados correctamente', 'success');
 			} catch (err) {
 				showMessage('Error al guardar: ' + err.message, 'error');
@@ -804,20 +835,22 @@ import Layout from '../layouts/Layout.astro';
 		}
 
 		document.getElementById('viewResultsBtn').addEventListener('click', async () => {
-			if (state.loadingAnalysis) return;
+			if (state.loadingAnalysis || !state.gameCompleted) return;
 			const viewBtn = document.getElementById('viewResultsBtn');
 			state.loadingAnalysis = true;
 			viewBtn.disabled = true;
 			viewBtn.textContent = 'Generando análisis...';
 			try {
-				const assessments = await api('/api/assessments', 'GET');
-				assessments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+				const assessmentId = state.lastAssessmentId;
 				const content = document.getElementById('resultsContent');
-				if (assessments && assessments.length > 0) {
-					const latest = assessments[0];
-					let analysisText = 'No se pudo obtener analisis detallado.';
-					try {
-						const detailed = await api(`/api/assessments/${latest.id}/analysis`, 'GET');
+				if (!assessmentId) {
+					content.innerHTML = '<p class="no-results">Guarda la partida antes de ver el análisis</p>';
+					return;
+				}
+				const latest = await api(`/api/assessments/${assessmentId}`, 'GET');
+				let analysisText = 'No se pudo obtener analisis detallado.';
+				try {
+					const detailed = await api(`/api/assessments/${assessmentId}/analysis`, 'GET');
 						if (detailed && detailed.analysis) {
 							analysisText = detailed.analysis;
 						}
@@ -842,9 +875,6 @@ import Layout from '../layouts/Layout.astro';
 							<div class="analysis-text">${escapeHtml(analysisText).replace(/\n/g, '<br/>')}</div>
 						</div>
 					`;
-				} else {
-					content.innerHTML = '<p class="no-results">No hay evaluaciones registradas</p>';
-				}
 			} catch (err) {
 				showMessage('Error al cargar resultados: ' + err.message, 'error');
 			} finally {
@@ -874,6 +904,7 @@ import Layout from '../layouts/Layout.astro';
 		});
 
 		if (state.gameType === 'memory') {
+			document.getElementById('memoryInstructions')?.classList.remove('hidden');
 			newGame();
 		}
 
@@ -902,15 +933,18 @@ import Layout from '../layouts/Layout.astro';
 				}
 				let html = '';
 				for (const a of assessments) {
+					const game = getGameInfo(a);
 					const date = new Date(a.createdAt).toLocaleDateString();
 					const time = new Date(a.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 					const riskPercent = (a.riskScore * 100).toFixed(0);
+					const acc = a.metrics?.accuracy != null ? `${(a.metrics.accuracy * 100).toFixed(0)}% prec.` : '';
 					html += `
 						<div class="history-item" data-id="${a.id}">
-							<div class="history-date">${date} <span class="history-time">${time}</span></div>
+							<div class="history-date">${game.icon} ${game.name} — ${date} <span class="history-time">${time}</span></div>
 							<div class="history-stats">
 								<span class="history-risk ${a.predictedDcl ? 'risk' : 'normal'}">Riesgo: ${riskPercent}%</span>
 								<span class="history-dcl ${a.predictedDcl ? 'risk' : 'normal'}">${a.predictedDcl ? 'DCL' : 'Normal'}</span>
+								${acc ? `<span>${acc}</span>` : ''}
 							</div>
 						</div>
 					`;
@@ -1663,6 +1697,40 @@ import Layout from '../layouts/Layout.astro';
 			font-size: 20px;
 			color: var(--text-muted);
 			margin-bottom: 24px;
+		}
+
+		.eval-badge {
+			display: inline-block;
+			background: rgba(184, 134, 11, 0.15);
+			color: var(--accent);
+			font-size: 12px;
+			font-weight: 600;
+			padding: 2px 8px;
+			border-radius: 12px;
+			margin-right: 6px;
+		}
+
+		.results-hint {
+			font-size: 14px;
+			color: var(--text-muted);
+			margin-bottom: 16px;
+			text-align: center;
+		}
+
+		.tutorial-steps {
+			margin: 12px 0 0 20px;
+			font-size: 14px;
+			color: var(--text-muted);
+			line-height: 1.8;
+		}
+
+		.whack-cell.target {
+			animation: popIn 0.25s ease;
+		}
+
+		@keyframes popIn {
+			from { transform: scale(0.5); opacity: 0; }
+			to { transform: scale(1); opacity: 1; }
 		}
 
 		.hidden {
