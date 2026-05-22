@@ -29,7 +29,7 @@ import Layout from '../layouts/Layout.astro';
 			</div>
 
 			<div class="games-grid">
-				<a href="/game?type=memory" class="game-card fade-in" style="animation-delay: 0.1s;">
+				<a href="/game?type=memory" class="game-card fade-in" data-game="memory" style="animation-delay: 0.1s;">
 					<div class="game-icon memory-icon">
 						<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
 							<rect x="3" y="3" width="7" height="7" rx="1"/>
@@ -40,6 +40,7 @@ import Layout from '../layouts/Layout.astro';
 					</div>
 					<h2>Memoria de Pares</h2>
 					<p class="game-desc">Encuentra los pares de tarjetas</p>
+					<p class="game-eval">Evalúa: memoria de trabajo y atención</p>
 					<div class="game-tags">
 						<span class="tag">Memoria</span>
 						<span class="tag">Atención</span>
@@ -55,6 +56,7 @@ import Layout from '../layouts/Layout.astro';
 					</div>
 					<h2>Stroop</h2>
 					<p class="game-desc">Nombra el color, ignora la palabra</p>
+					<p class="game-eval">Evalúa: control inhibitorio y flexibilidad</p>
 					<div class="game-tags">
 						<span class="tag">Control inhibitorio</span>
 						<span class="tag">Flexibilidad</span>
@@ -69,7 +71,8 @@ import Layout from '../layouts/Layout.astro';
 						</svg>
 					</div>
 					<h2>Navegación</h2>
-					<p class="game-desc">Encuentra el camino en el laberinto</p>
+					<p class="game-desc">Lleva tu estrella ★ hasta la meta ⚑</p>
+					<p class="game-eval">Evalúa: orientación y memoria espacial</p>
 					<div class="game-tags">
 						<span class="tag">Orientación espacial</span>
 						<span class="tag">Memoria espacial</span>
@@ -85,7 +88,8 @@ import Layout from '../layouts/Layout.astro';
 						</svg>
 					</div>
 					<h2>Whack-a-Mole</h2>
-					<p class="game-desc">Toca los objetivos, ignora los distractores</p>
+					<p class="game-desc">Toca el hámster, ignora la X</p>
+					<p class="game-eval">Evalúa: Go/No-Go y tiempo de reacción</p>
 					<div class="game-tags">
 						<span class="tag">Atención</span>
 						<span class="tag">Tiempo de reacción</span>
@@ -264,7 +268,15 @@ import Layout from '../layouts/Layout.astro';
 		.game-desc {
 			font-size: 13px;
 			color: var(--text-muted);
-			margin-bottom: 16px;
+			margin-bottom: 8px;
+		}
+
+		.game-eval {
+			font-size: 11px;
+			color: var(--accent);
+			font-weight: 500;
+			margin-bottom: 12px;
+			line-height: 1.4;
 		}
 
 		.game-tags {
