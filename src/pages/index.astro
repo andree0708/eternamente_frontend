@@ -141,7 +141,8 @@ import Layout from '../layouts/Layout.astro';
 				window.location.href = '/games';
 			} catch (err) {
 				console.error('Error login:', err);
-				showMessage('Credenciales incorrectas. Intenta de nuevo.', 'error');
+				const msg = err instanceof Error ? err.message : 'Error de conexión';
+				showMessage(msg.includes('conectar') ? msg : 'Credenciales incorrectas o error de servidor: ' + msg, 'error');
 			}
 		});
 
