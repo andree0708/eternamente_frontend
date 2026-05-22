@@ -76,6 +76,8 @@ import Layout from '../layouts/Layout.astro';
 	</div>
 
 	<script>
+		import { api } from '../lib/api.ts';
+
 		const state = {
 			token: localStorage.getItem('eternamente_token') || '',
 			user: JSON.parse(localStorage.getItem('eternamente_user') || 'null')
@@ -104,32 +106,6 @@ import Layout from '../layouts/Layout.astro';
 		function showMessage(text, type) {
 			authMessage.textContent = text;
 			authMessage.className = `auth-message ${type}`;
-		}
-
-		async function api(endpoint, method, body, auth = false) {
-			const headers = { 'Content-Type': 'application/json' };
-			if (auth && state.token) {
-				headers.Authorization = `Bearer ${state.token}`;
-			}
-			let baseUrl = import.meta.env.PUBLIC_API_URL;
-			baseUrl = baseUrl.replace(/\/+$/, '').replace(/\/+$/, '');
-			const url = `${baseUrl}${endpoint}`;
-			console.log('API Request:', method, url);
-			console.log('Body:', body);
-			const resp = await fetch(url, {
-				method,
-				headers,
-				body: body ? JSON.stringify(body) : undefined
-			});
-			console.log('Response status:', resp.status);
-			const text = await resp.text();
-			console.log('Response text:', text);
-			let json;
-			try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
-			if (!resp.ok) {
-				throw new Error(json.message || json.raw || `Error ${resp.status}`);
-			}
-			return json;
 		}
 
 		loginForm.addEventListener('submit', async (e) => {
