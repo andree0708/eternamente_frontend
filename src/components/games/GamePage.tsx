@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { GAME_META, parseGameType } from '../../lib/gameConfig';
 import { useGameSession } from '../../hooks/useGameSession';
 import { GameStatsBar } from './GameStatsBar';
@@ -36,17 +36,18 @@ export function GamePage() {
     }
   }, []);
 
-  const handleComplete = useCallback(
-    async (metrics: Record<string, unknown>) => {
-      await session.completeAndSave(metrics);
-    },
-    [session]
-  );
-
   const handleNewGame = () => {
     session.resetSession();
     setResetKey((k) => k + 1);
   };
+
+  // Evita que onComplete cambie en cada render y dispare guardados extra
+  const completeRef = useRef(session.completeAndSave);
+  completeRef.current = session.completeAndSave;
+  const stableOnComplete = useCallback(
+    (metrics: Record<string, unknown>) => completeRef.current(metrics),
+    []
+  );
 
   const logout = () => {
     localStorage.removeItem('eternamente_token');
@@ -57,7 +58,7 @@ export function GamePage() {
   const gameElement = useMemo(() => {
     const props = {
       key: resetKey,
-      onComplete: handleComplete,
+      onComplete: stableOnComplete,
       onStatsChange: (v: [number, number, number | string]) =>
         setStats([v[0], v[1], typeof v[2] === 'number' ? v[2] : v[2]]),
     };
@@ -72,12 +73,12 @@ export function GamePage() {
         return (
           <MemoryGame
             key={resetKey}
-            onComplete={handleComplete}
+            onComplete={stableOnComplete}
             onStatsChange={(v) => setStats(v)}
           />
         );
     }
-  }, [gameType, resetKey, handleComplete]);
+  }, [gameType, resetKey, stableOnComplete]);
 
   return (
     <div className="game-app" style={{ '--game-accent': meta.accent } as CSSProperties}>

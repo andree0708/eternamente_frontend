@@ -51,9 +51,15 @@ export async function api<T = Record<string, unknown>>(
   auth = true
 ): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  const token = getAuthToken();
-  if (auth && token) {
+
+  if (auth) {
+    const token = getAuthToken();
+    if (!token) {
+      throw new Error('Sesión expirada. Vuelve a iniciar sesión.');
+    }
     headers.Authorization = `Bearer ${token}`;
+    // Respaldo si un proxy elimina Authorization (p. ej. algunos despliegues)
+    headers['X-Auth-Token'] = token;
   }
 
   const base = getApiBaseUrl();
@@ -66,15 +72,13 @@ export async function api<T = Record<string, unknown>>(
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
-      credentials: 'include',
-      mode: 'cors',
     });
   } catch (err) {
     throw new Error(networkErrorMessage(url, err));
   }
 
   const text = await resp.text();
-  let json: T & { message?: string; raw?: string };
+  let json: T & { message?: string; raw?: string; error?: string };
   try {
     json = text ? JSON.parse(text) : ({} as T);
   } catch {
@@ -82,8 +86,11 @@ export async function api<T = Record<string, unknown>>(
   }
 
   if (!resp.ok) {
-    const err = json as { message?: string; raw?: string };
-    throw new Error(err.message || err.raw || `Error ${resp.status}`);
+    const err = json as { message?: string; raw?: string; error?: string };
+    if (resp.status === 401) {
+      throw new Error('No autorizado. Cierra sesión y vuelve a entrar.');
+    }
+    throw new Error(err.message || err.error || err.raw || `Error ${resp.status}`);
   }
   return json;
 }

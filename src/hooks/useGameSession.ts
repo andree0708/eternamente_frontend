@@ -28,7 +28,7 @@ export function useGameSession(gameType: GameType) {
     try {
       const saved = await api<SavedAssessment>('/api/assessments', 'POST', {
         age: 65,
-        metrics: { gameType, ...metrics },
+        metrics: { ...metrics, gameType },
       });
       setLastAssessmentId(saved.id);
       setSaveMessage({ text: '¡Partida guardada correctamente!', type: 'success' });

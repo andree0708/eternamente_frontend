@@ -27,9 +27,11 @@ export function WhackGame({ onComplete, onStatsChange }: Props) {
   const targetRef = useRef<number | null>(null);
   const startRef = useRef(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const savedRef = useRef(false);
 
   useEffect(() => {
-    if (played < ROUNDS || finished) return;
+    if (played < ROUNDS || finished || savedRef.current) return;
+    savedRef.current = true;
     setFinished(true);
     const avg =
       reactionTimes.length > 0

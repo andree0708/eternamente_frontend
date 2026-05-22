@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { GameCompleteBanner } from './GameCompleteBanner';
 import { GameInstructions } from './GameInstructions';
 import { GAME_META } from '../../lib/gameConfig';
@@ -30,6 +30,7 @@ export function StroopGame({ onComplete, onStatsChange }: Props) {
   const [finished, setFinished] = useState(false);
   const [flash, setFlash] = useState<'ok' | 'bad' | null>(null);
   const [instructionsOpen, setInstructionsOpen] = useState(true);
+  const savedRef = useRef(false);
 
   const showRound = useCallback(() => {
     const wordIdx = Math.floor(Math.random() * COLORS.length);
@@ -46,7 +47,8 @@ export function StroopGame({ onComplete, onStatsChange }: Props) {
   }, [showRound]);
 
   useEffect(() => {
-    if (played < ROUNDS || finished) return;
+    if (played < ROUNDS || finished || savedRef.current) return;
+    savedRef.current = true;
     setFinished(true);
     const avg =
       reactionTimes.length > 0

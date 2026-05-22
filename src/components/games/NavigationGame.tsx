@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameCompleteBanner } from './GameCompleteBanner';
 import { GameInstructions } from './GameInstructions';
 import { GAME_META } from '../../lib/gameConfig';
@@ -21,6 +21,7 @@ export function NavigationGame({ onComplete, onStatsChange }: Props) {
   const [finished, setFinished] = useState(false);
   const [instructionsOpen, setInstructionsOpen] = useState(true);
   const [levelFlash, setLevelFlash] = useState(false);
+  const savedRef = useRef(false);
 
   const startLevel = useCallback(() => {
     const size = GRID_SIZE * GRID_SIZE;
@@ -69,7 +70,8 @@ export function NavigationGame({ onComplete, onStatsChange }: Props) {
   };
 
   useEffect(() => {
-    if (!finished) return;
+    if (!finished || savedRef.current) return;
+    savedRef.current = true;
     onComplete({
       gameType: 'navigation',
       maxLevel: MAX_LEVEL,
