@@ -11,6 +11,10 @@ const COLORS = [
 ] as const;
 
 const ROUNDS = 20;
+/** Segundos de exposición de la palabra antes de poder responder */
+const WORD_DISPLAY_MS = 4000;
+
+type Phase = 'stimulus' | 'response';
 
 interface Props {
   onComplete: (metrics: Record<string, unknown>) => void;
@@ -26,30 +30,55 @@ export function StroopGame({ onComplete, onStatsChange }: Props) {
   const [word, setWord] = useState('');
   const [inkHex, setInkHex] = useState('#333');
   const [inkName, setInkName] = useState('');
-  const [startTime, setStartTime] = useState(0);
+  const [phase, setPhase] = useState<Phase>('stimulus');
+  const [stimulusKey, setStimulusKey] = useState(0);
   const [finished, setFinished] = useState(false);
   const [flash, setFlash] = useState<'ok' | 'bad' | null>(null);
   const [instructionsOpen, setInstructionsOpen] = useState(true);
+  const startTimeRef = useRef(0);
+  const stimulusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedRef = useRef(false);
 
+  const clearStimulusTimer = useCallback(() => {
+    if (stimulusTimerRef.current) {
+      clearTimeout(stimulusTimerRef.current);
+      stimulusTimerRef.current = null;
+    }
+  }, []);
+
+  const beginResponsePhase = useCallback(() => {
+    setPhase('response');
+    startTimeRef.current = performance.now();
+  }, []);
+
   const showRound = useCallback(() => {
+    clearStimulusTimer();
     const wordIdx = Math.floor(Math.random() * COLORS.length);
     const inkIdx = Math.floor(Math.random() * COLORS.length);
     setWord(COLORS[wordIdx].name.toUpperCase());
     setInkHex(COLORS[inkIdx].hex);
     setInkName(COLORS[inkIdx].name);
-    setStartTime(performance.now());
-  }, []);
+    setPhase('stimulus');
+    setStimulusKey((k) => k + 1);
+    stimulusTimerRef.current = setTimeout(beginResponsePhase, WORD_DISPLAY_MS);
+  }, [clearStimulusTimer, beginResponsePhase]);
 
   useEffect(() => {
-    const t = setTimeout(showRound, 600);
-    return () => clearTimeout(t);
-  }, [showRound]);
+    if (instructionsOpen) return;
+    const t = setTimeout(showRound, 400);
+    return () => {
+      clearTimeout(t);
+      clearStimulusTimer();
+    };
+  }, [instructionsOpen, showRound, clearStimulusTimer]);
+
+  useEffect(() => () => clearStimulusTimer(), [clearStimulusTimer]);
 
   useEffect(() => {
     if (played < ROUNDS || finished || savedRef.current) return;
     savedRef.current = true;
     setFinished(true);
+    clearStimulusTimer();
     const avg =
       reactionTimes.length > 0
         ? reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length
@@ -61,8 +90,9 @@ export function StroopGame({ onComplete, onStatsChange }: Props) {
       errors,
       accuracy: Number((correct / ROUNDS).toFixed(4)),
       averageReactionTimeMs: Number(avg.toFixed(2)),
+      stimulusDisplayMs: WORD_DISPLAY_MS,
     });
-  }, [played, finished, correct, errors, reactionTimes, onComplete]);
+  }, [played, finished, correct, errors, reactionTimes, onComplete, clearStimulusTimer]);
 
   useEffect(() => {
     const avg =
@@ -73,18 +103,20 @@ export function StroopGame({ onComplete, onStatsChange }: Props) {
   }, [correct, errors, reactionTimes, onStatsChange]);
 
   const answer = (colorName: string) => {
-    if (finished || played >= ROUNDS) return;
-    const rt = performance.now() - startTime;
+    if (finished || played >= ROUNDS || phase !== 'response') return;
+    const rt = performance.now() - startTimeRef.current;
     setReactionTimes((r) => [...r, rt]);
     const isCorrect = colorName === inkName;
     setFlash(isCorrect ? 'ok' : 'bad');
     if (isCorrect) setCorrect((c) => c + 1);
     else setErrors((e) => e + 1);
-    setPlayed((p) => p + 1);
+    const nextPlayed = played + 1;
+    setPlayed(nextPlayed);
+    clearStimulusTimer();
     setTimeout(() => {
       setFlash(null);
-      if (played + 1 < ROUNDS) showRound();
-    }, 350);
+      if (nextPlayed < ROUNDS) showRound();
+    }, 400);
   };
 
   if (finished) {
@@ -103,6 +135,9 @@ export function StroopGame({ onComplete, onStatsChange }: Props) {
     );
   }
 
+  const canAnswer = phase === 'response' && !instructionsOpen;
+  const seconds = WORD_DISPLAY_MS / 1000;
+
   return (
     <div className={`stroop-game ${flash ? `stroop-game--${flash}` : ''}`}>
       <GameInstructions
@@ -114,30 +149,55 @@ export function StroopGame({ onComplete, onStatsChange }: Props) {
         onToggle={() => setInstructionsOpen((o) => !o)}
       />
 
-      <div className="stroop-game__progress">
-        <div className="stroop-game__progress-bar" style={{ width: `${(played / ROUNDS) * 100}%` }} />
-        <span>Ronda {Math.min(played + 1, ROUNDS)} de {ROUNDS}</span>
-      </div>
+      {!instructionsOpen && (
+        <>
+          <div className="stroop-game__progress">
+            <div className="stroop-game__progress-bar" style={{ width: `${(played / ROUNDS) * 100}%` }} />
+            <span>Ronda {Math.min(played + 1, ROUNDS)} de {ROUNDS}</span>
+          </div>
 
-      <p className="stroop-game__hint">Selecciona el <strong>color de la tinta</strong>, no la palabra</p>
+          <p className="stroop-game__hint">
+            {phase === 'stimulus' ? (
+              <>Observa la palabra durante <strong>{seconds} segundos</strong></>
+            ) : (
+              <>Selecciona el <strong>color de la tinta</strong>, no la palabra</>
+            )}
+          </p>
 
-      <div className="stroop-game__word" style={{ color: inkHex }}>
-        {word || '...'}
-      </div>
-
-      <div className="stroop-game__buttons">
-        {COLORS.map((c) => (
-          <button
-            key={c.name}
-            type="button"
-            className="stroop-game__btn"
-            style={{ '--btn-color': c.hex } as CSSProperties}
-            onClick={() => answer(c.name)}
+          <div
+            className={`stroop-game__word ${phase === 'stimulus' ? 'stroop-game__word--stimulus' : ''}`}
+            style={{ color: inkHex }}
           >
-            {c.label}
-          </button>
-        ))}
-      </div>
+            {word || '...'}
+          </div>
+
+          {phase === 'stimulus' && (
+            <div className="stroop-game__timer" aria-hidden>
+              <div
+                key={stimulusKey}
+                className="stroop-game__timer-bar"
+                style={{ animationDuration: `${WORD_DISPLAY_MS}ms` }}
+              />
+              <span className="stroop-game__timer-label">{seconds}s</span>
+            </div>
+          )}
+
+          <div className={`stroop-game__buttons ${!canAnswer ? 'stroop-game__buttons--locked' : ''}`}>
+            {COLORS.map((c) => (
+              <button
+                key={c.name}
+                type="button"
+                className="stroop-game__btn"
+                style={{ '--btn-color': c.hex } as CSSProperties}
+                disabled={!canAnswer}
+                onClick={() => answer(c.name)}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
