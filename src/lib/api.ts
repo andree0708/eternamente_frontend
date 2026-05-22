@@ -1,7 +1,7 @@
 /**
  * URL base del API.
  * - Local: PUBLIC_API_URL=http://localhost:8080 en .env
- * - Vercel: dejar vacío o "/" para usar el proxy de vercel.json (mismo origen, sin CORS)
+ * - Vercel: dejar vacío para usar el proxy de vercel.json (mismo origen, sin CORS)
  */
 export function getApiBaseUrl(): string {
   const configured = (import.meta.env.PUBLIC_API_URL as string | undefined)?.trim();
@@ -15,7 +15,6 @@ export function getApiBaseUrl(): string {
       return configured.replace(/\/+$/, '');
     }
 
-    // Producción en Vercel: rutas relativas → proxy en vercel.json
     if (!isLocal) {
       if (!configured || configured === '/' || configured === 'PROXY') {
         return '';
@@ -35,10 +34,33 @@ export function getAuthToken(): string {
   return localStorage.getItem('eternamente_token') || '';
 }
 
+export interface ApiEnvelope<T> {
+  success: boolean;
+  data: T;
+  meta?: { timestamp?: string; version?: string };
+  error?: { code?: string; message?: string };
+}
+
+function unwrapResponse<T>(json: unknown): T {
+  if (
+    json &&
+    typeof json === 'object' &&
+    'success' in json &&
+    'data' in json
+  ) {
+    const envelope = json as ApiEnvelope<T>;
+    if (!envelope.success) {
+      throw new Error(envelope.error?.message || 'Error en la respuesta del servidor');
+    }
+    return envelope.data;
+  }
+  return json as T;
+}
+
 function networkErrorMessage(url: string, cause: unknown): string {
   const hint =
     typeof window !== 'undefined' && !window.location.hostname.includes('localhost')
-      ? ' Comprueba que el backend en Render esté activo y que hayas redesplegado front y back.'
+      ? ' Comprueba que el backend en Render esté activo.'
       : ' ¿Está el backend en marcha (puerto 8080)?';
   const detail = cause instanceof Error ? cause.message : String(cause);
   return `No se pudo conectar con el servidor (${url}).${hint} Detalle: ${detail}`;
@@ -58,7 +80,6 @@ export async function api<T = Record<string, unknown>>(
       throw new Error('Sesión expirada. Vuelve a iniciar sesión.');
     }
     headers.Authorization = `Bearer ${token}`;
-    // Respaldo si un proxy elimina Authorization (p. ej. algunos despliegues)
     headers['X-Auth-Token'] = token;
   }
 
@@ -78,19 +99,25 @@ export async function api<T = Record<string, unknown>>(
   }
 
   const text = await resp.text();
-  let json: T & { message?: string; raw?: string; error?: string };
+  let json: unknown;
   try {
-    json = text ? JSON.parse(text) : ({} as T);
+    json = text ? JSON.parse(text) : {};
   } catch {
-    json = { raw: text } as T & { raw?: string };
+    json = { raw: text };
   }
 
   if (!resp.ok) {
-    const err = json as { message?: string; raw?: string; error?: string };
+    const envelope = json as ApiEnvelope<unknown>;
+    const message =
+      envelope?.error?.message ||
+      (json as { message?: string })?.message ||
+      (json as { raw?: string })?.raw ||
+      `Error ${resp.status}`;
     if (resp.status === 401) {
       throw new Error('No autorizado. Cierra sesión y vuelve a entrar.');
     }
-    throw new Error(err.message || err.error || err.raw || `Error ${resp.status}`);
+    throw new Error(message);
   }
-  return json;
+
+  return unwrapResponse<T>(json);
 }

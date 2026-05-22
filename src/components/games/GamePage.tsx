@@ -124,6 +124,7 @@ export function GamePage() {
           visible={session.gameCompleted}
           lastAssessmentId={session.lastAssessmentId}
           gameCompleted={session.gameCompleted}
+          saved={session.saveMessage?.type === 'success'}
         />
       </main>
     </div>

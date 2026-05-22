@@ -1,17 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameCompleteBanner } from './GameCompleteBanner';
 import { GameInstructions } from './GameInstructions';
-import { GameStatsBar } from './GameStatsBar';
 import { GAME_META } from '../../lib/gameConfig';
 
 const SYMBOLS = ['★', '♥', '♦', '♣', '♠', '✿', '☀', '☁', '🌙', '🔔', '🍀', '⭐'];
+
+type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';
+
+const DIFFICULTY_CONFIG: Record<Difficulty, { pairs: number; cols: number; label: string }> = {
+  EASY: { pairs: 6, cols: 4, label: 'Fácil (6 pares)' },
+  MEDIUM: { pairs: 8, cols: 4, label: 'Medio (8 pares)' },
+  HARD: { pairs: 12, cols: 6, label: 'Difícil (12 pares)' },
+};
 
 interface Card {
   id: number;
   symbol: string;
   revealed: boolean;
   matched: boolean;
-  openedAt: number | null;
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -23,6 +29,17 @@ function shuffle<T>(arr: T[]): T[] {
   return copy;
 }
 
+function buildDeck(pairs: number): Card[] {
+  const selected = SYMBOLS.slice(0, pairs);
+  const deck = [...selected, ...selected];
+  return shuffle(deck).map((symbol, id) => ({
+    id,
+    symbol,
+    revealed: false,
+    matched: false,
+  }));
+}
+
 interface Props {
   onComplete: (metrics: Record<string, unknown>) => void;
   onStatsChange?: (values: [number, number, string]) => void;
@@ -30,119 +47,142 @@ interface Props {
 
 export function MemoryGame({ onComplete, onStatsChange }: Props) {
   const meta = GAME_META.memory;
-  const [difficulty, setDifficulty] = useState<'EASY' | 'MEDIUM' | 'HARD'>('EASY');
-  const totalPairs = difficulty === 'EASY' ? 6 : difficulty === 'MEDIUM' ? 8 : 10;
-  const [cards, setCards] = useState<Card[]>([]);
-  const [openIndexes, setOpenIndexes] = useState<number[]>([]);
+  const [difficulty, setDifficulty] = useState<Difficulty>('EASY');
+  const config = DIFFICULTY_CONFIG[difficulty];
+
+  const [cards, setCards] = useState<Card[]>(() => buildDeck(config.pairs));
+  const [firstPick, setFirstPick] = useState<number | null>(null);
+  const [secondPick, setSecondPick] = useState<number | null>(null);
   const [lockBoard, setLockBoard] = useState(false);
   const [moves, setMoves] = useState(0);
   const [mismatches, setMismatches] = useState(0);
   const [matchedPairs, setMatchedPairs] = useState(0);
-  const [startAt, setStartAt] = useState<number | null>(null);
-  const [revealDurations, setRevealDurations] = useState<number[]>([]);
   const [finished, setFinished] = useState(false);
   const [instructionsOpen, setInstructionsOpen] = useState(true);
+
+  const startAtRef = useRef(performance.now());
+  const revealTimesRef = useRef<number[]>([]);
   const completedRef = useRef(false);
+  const pickStartRef = useRef<number>(0);
 
-  const createDeck = useCallback(() => {
-    const pairs = [...SYMBOLS.slice(0, totalPairs), ...SYMBOLS.slice(0, totalPairs)];
-    return shuffle(pairs).map((symbol, id) => ({
-      id,
-      symbol,
-      revealed: false,
-      matched: false,
-      openedAt: null,
-    }));
-  }, [totalPairs]);
-
-  const newGame = useCallback(() => {
-    setStartAt(performance.now());
+  const resetGame = useCallback((diff: Difficulty) => {
+    const cfg = DIFFICULTY_CONFIG[diff];
+    setCards(buildDeck(cfg.pairs));
+    setFirstPick(null);
+    setSecondPick(null);
+    setLockBoard(false);
     setMoves(0);
     setMismatches(0);
     setMatchedPairs(0);
-    setRevealDurations([]);
-    setOpenIndexes([]);
-    setLockBoard(false);
     setFinished(false);
     completedRef.current = false;
-    setCards(createDeck());
-  }, [createDeck]);
+    startAtRef.current = performance.now();
+    revealTimesRef.current = [];
+    pickStartRef.current = performance.now();
+  }, []);
 
   useEffect(() => {
-    newGame();
-  }, [newGame]);
+    resetGame(difficulty);
+  }, [difficulty, resetGame]);
 
   useEffect(() => {
-    onStatsChange?.([moves, mismatches, `${matchedPairs}/${totalPairs}`]);
-  }, [moves, mismatches, matchedPairs, totalPairs, onStatsChange]);
+    onStatsChange?.([moves, mismatches, `${matchedPairs}/${config.pairs}`]);
+  }, [moves, mismatches, matchedPairs, config.pairs, onStatsChange]);
+
+  const resolvingRef = useRef(false);
 
   useEffect(() => {
-    if (matchedPairs < totalPairs || finished || !startAt || completedRef.current) return;
-    completedRef.current = true;
-    setFinished(true);
-    const endAt = performance.now();
-    const avg = revealDurations.length
-      ? revealDurations.reduce((x, y) => x + y, 0) / revealDurations.length
-      : 0;
-    onComplete({
-      gameType: 'memory',
-      difficulty,
-      totalPairs,
-      matchedPairs,
-      moves,
-      mismatches,
-      durationSeconds: Number(((endAt - startAt) / 1000).toFixed(2)),
-      averageRevealMs: Number(avg.toFixed(2)),
-      accuracy: Number((matchedPairs / totalPairs).toFixed(4)),
-      reactionTimeMs: Number(avg.toFixed(2)),
-    });
-  }, [matchedPairs, totalPairs, finished, startAt, moves, mismatches, difficulty, revealDurations, onComplete]);
+    if (firstPick === null || secondPick === null || lockBoard || resolvingRef.current) return;
 
-  const flipCard = (index: number) => {
-    if (lockBoard || finished) return;
-    setCards((prev) => {
-      const card = prev[index];
-      if (!card || card.revealed || card.matched) return prev;
-      const next = prev.map((c, i) =>
-        i === index ? { ...c, revealed: true, openedAt: performance.now() } : c
+    const first = cards[firstPick];
+    const second = cards[secondPick];
+    if (!first?.revealed || !second?.revealed) return;
+
+    resolvingRef.current = true;
+    const reaction = performance.now() - pickStartRef.current;
+    revealTimesRef.current.push(reaction);
+
+    if (first.symbol === second.symbol) {
+      setCards((prev) =>
+        prev.map((c, i) =>
+          i === firstPick || i === secondPick ? { ...c, matched: true, revealed: true } : c
+        )
       );
-      const newOpen = [...openIndexes, index];
-      setOpenIndexes(newOpen);
-      if (newOpen.length < 2) return next;
+      setMatchedPairs((p) => {
+        const next = p + 1;
+        if (next >= config.pairs && !completedRef.current) {
+          completedRef.current = true;
+          setFinished(true);
+          const duration = (performance.now() - startAtRef.current) / 1000;
+          const avg =
+            revealTimesRef.current.length > 0
+              ? revealTimesRef.current.reduce((a, b) => a + b, 0) / revealTimesRef.current.length
+              : 0;
+          queueMicrotask(() =>
+            onComplete({
+              gameType: 'memory',
+              difficulty,
+              totalPairs: config.pairs,
+              matchedPairs: next,
+              moves,
+              mismatches,
+              durationSeconds: Number(duration.toFixed(2)),
+              averageRevealMs: Number(avg.toFixed(2)),
+              accuracy: Number((next / config.pairs).toFixed(4)),
+              reactionTimeMs: Number(avg.toFixed(2)),
+            })
+          );
+        }
+        return next;
+      });
+      setFirstPick(null);
+      setSecondPick(null);
+      resolvingRef.current = false;
+      return;
+    }
 
-      const [a, b] = newOpen;
-      const first = next[a];
-      const second = next[b];
-      setMoves((m) => m + 1);
+    setMismatches((m) => m + 1);
+    setLockBoard(true);
+    setTimeout(() => {
+      setCards((prev) =>
+        prev.map((c, i) =>
+          i === firstPick || i === secondPick ? { ...c, revealed: false } : c
+        )
+      );
+      setFirstPick(null);
+      setSecondPick(null);
+      setLockBoard(false);
+      resolvingRef.current = false;
+      pickStartRef.current = performance.now();
+    }, 750);
+  }, [firstPick, secondPick, cards, lockBoard, config.pairs, difficulty, moves, mismatches, onComplete]);
 
-      if (startAt && first.openedAt && second.openedAt) {
-        setRevealDurations((d) => [
-          ...d,
-          first.openedAt! - startAt,
-          second.openedAt! - startAt,
-        ]);
-      }
+  const handleCardClick = (index: number) => {
+    if (lockBoard || finished) return;
+    const card = cards[index];
+    if (!card || card.matched || card.revealed) return;
 
-      if (first.symbol === second.symbol) {
-        const matched = next.map((c, i) =>
-          i === a || i === b ? { ...c, matched: true } : c
-        );
-        setOpenIndexes([]);
-        setMatchedPairs((p) => p + 1);
-        return matched;
-      }
+    if (firstPick === null) {
+      pickStartRef.current = performance.now();
+      setCards((prev) =>
+        prev.map((c, i) => (i === index ? { ...c, revealed: true } : c))
+      );
+      setFirstPick(index);
+      return;
+    }
 
-      setMismatches((m) => m + 1);
-      setLockBoard(true);
-      setTimeout(() => {
-        setCards((c) =>
-          c.map((card, i) => (i === a || i === b ? { ...card, revealed: false } : card))
-        );
-        setOpenIndexes([]);
-        setLockBoard(false);
-      }, 700);
-      return next;
-    });
+    if (firstPick === index) return;
+
+    setCards((prev) =>
+      prev.map((c, i) => (i === index ? { ...c, revealed: true } : c))
+    );
+    setSecondPick(index);
+    setMoves((m) => m + 1);
+  };
+
+  const changeDifficulty = (d: Difficulty) => {
+    if (lockBoard || d === difficulty) return;
+    setDifficulty(d);
   };
 
   if (finished) {
@@ -151,14 +191,13 @@ export function MemoryGame({ onComplete, onStatsChange }: Props) {
         stats={[
           { label: 'Movimientos', value: String(moves) },
           { label: 'Errores', value: String(mismatches) },
-          { label: 'Pares', value: `${matchedPairs}/${totalPairs}` },
+          { label: 'Pares', value: `${matchedPairs}/${config.pairs}` },
+          { label: 'Dificultad', value: config.label },
         ]}
         onBack={() => { window.location.href = '/games'; }}
       />
     );
   }
-
-  const cols = totalPairs <= 6 ? 4 : totalPairs <= 8 ? 4 : 5;
 
   return (
     <div className="memory-game">
@@ -171,29 +210,35 @@ export function MemoryGame({ onComplete, onStatsChange }: Props) {
       />
 
       <div className="memory-game__difficulty">
-        {(['EASY', 'MEDIUM', 'HARD'] as const).map((d) => (
+        {(Object.keys(DIFFICULTY_CONFIG) as Difficulty[]).map((d) => (
           <button
             key={d}
             type="button"
             className={difficulty === d ? 'active' : ''}
-            onClick={() => setDifficulty(d)}
+            onClick={() => changeDifficulty(d)}
+            disabled={lockBoard}
           >
-            {d === 'EASY' ? 'Fácil' : d === 'MEDIUM' ? 'Medio' : 'Difícil'}
+            {DIFFICULTY_CONFIG[d].label}
           </button>
         ))}
       </div>
 
+      <p className="memory-game__hint">
+        {config.pairs * 2} cartas · {config.cols} columnas
+      </p>
+
       <div
         className="memory-game__board"
-        style={{ gridTemplateColumns: `repeat(${cols}, minmax(64px, 1fr))` }}
+        style={{ gridTemplateColumns: `repeat(${config.cols}, minmax(56px, 1fr))` }}
       >
         {cards.map((card, index) => (
           <button
-            key={`${card.id}-${index}`}
+            key={`${difficulty}-${card.id}-${index}`}
             type="button"
             className={`memory-game__card ${card.revealed ? 'revealed' : ''} ${card.matched ? 'matched' : ''}`}
-            onClick={() => flipCard(index)}
-            disabled={lockBoard || card.revealed || card.matched}
+            onClick={() => handleCardClick(index)}
+            disabled={lockBoard || card.matched}
+            aria-label={card.matched || card.revealed ? card.symbol : 'Carta oculta'}
           >
             <span className="memory-game__card-inner">
               {card.revealed || card.matched ? card.symbol : '?'}

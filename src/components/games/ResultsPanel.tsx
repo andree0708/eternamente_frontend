@@ -15,54 +15,66 @@ interface Props {
   visible: boolean;
   lastAssessmentId: string | null;
   gameCompleted: boolean;
+  saved: boolean;
 }
 
-export function ResultsPanel({ visible, lastAssessmentId, gameCompleted }: Props) {
+export function ResultsPanel({ visible, lastAssessmentId, gameCompleted, saved }: Props) {
   const [tab, setTab] = useState<'current' | 'history'>('current');
   const [loading, setLoading] = useState(false);
-  const [analysisHtml, setAnalysisHtml] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<{
+    risk: string;
+    prediction: string;
+    date: string;
+    text: string;
+  } | null>(null);
   const [history, setHistory] = useState<Assessment[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  const canShowAnalysis = visible && gameCompleted && saved && !!lastAssessmentId;
+
+  useEffect(() => {
+    if (!visible) {
+      setAnalysis(null);
+      setTab('current');
+    }
+  }, [visible]);
+
   const loadAnalysis = useCallback(async () => {
-    if (!lastAssessmentId || !gameCompleted) return;
+    if (!canShowAnalysis || !lastAssessmentId) return;
     setLoading(true);
-    setAnalysisHtml(null);
+    setAnalysis(null);
     try {
       const latest = await api<Assessment>(`/api/assessments/${lastAssessmentId}`, 'GET');
       let text = 'No se pudo obtener el análisis detallado.';
       try {
-        const detailed = await api<{ analysis?: string }>(`/api/assessments/${lastAssessmentId}/analysis`, 'GET');
+        const detailed = await api<{ analysis?: string }>(
+          `/api/assessments/${lastAssessmentId}/analysis`,
+          'GET'
+        );
         if (detailed?.analysis) text = detailed.analysis;
       } catch {
         /* fallback */
       }
-      setAnalysisHtml(`
-        <div class="results-panel__row">
-          <span>Riesgo cognitivo</span>
-          <strong>${(latest.riskScore * 100).toFixed(1)}%</strong>
-        </div>
-        <div class="results-panel__row">
-          <span>Predicción</span>
-          <strong class="${latest.predictedDcl ? 'risk' : 'ok'}">${latest.predictedDcl ? 'Riesgo detectado' : 'Normal'}</strong>
-        </div>
-        <div class="results-panel__row">
-          <span>Fecha</span>
-          <strong>${new Date(latest.createdAt).toLocaleDateString('es-ES')}</strong>
-        </div>
-        <div class="results-panel__analysis">
-          <h4>Análisis con IA</h4>
-          <p>${text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br/>')}</p>
-        </div>
-      `);
+      setAnalysis({
+        risk: `${(latest.riskScore * 100).toFixed(1)}%`,
+        prediction: latest.predictedDcl ? 'Riesgo detectado' : 'Normal',
+        date: new Date(latest.createdAt).toLocaleDateString('es-ES'),
+        text,
+      });
     } catch {
-      setAnalysisHtml('<p class="results-panel__error">Error al cargar el análisis</p>');
+      setAnalysis({
+        risk: '—',
+        prediction: '—',
+        date: '—',
+        text: 'Error al cargar el análisis. Intenta de nuevo.',
+      });
     } finally {
       setLoading(false);
     }
-  }, [lastAssessmentId, gameCompleted]);
+  }, [canShowAnalysis, lastAssessmentId]);
 
   const loadHistory = useCallback(async () => {
+    if (!visible) return;
     setHistoryLoading(true);
     try {
       const list = await api<Assessment[]>('/api/assessments', 'GET');
@@ -73,7 +85,7 @@ export function ResultsPanel({ visible, lastAssessmentId, gameCompleted }: Props
     } finally {
       setHistoryLoading(false);
     }
-  }, []);
+  }, [visible]);
 
   useEffect(() => {
     if (tab === 'history' && visible) loadHistory();
@@ -82,6 +94,7 @@ export function ResultsPanel({ visible, lastAssessmentId, gameCompleted }: Props
   if (!visible) {
     return (
       <aside className="results-panel results-panel--locked">
+        <div className="results-panel__lock-icon">🔒</div>
         <h2>Resultados</h2>
         <p>Completa la partida para desbloquear tu análisis personalizado.</p>
       </aside>
@@ -91,6 +104,13 @@ export function ResultsPanel({ visible, lastAssessmentId, gameCompleted }: Props
   return (
     <aside className="results-panel">
       <h2>Resultados de evaluación</h2>
+      {!saved && gameCompleted && (
+        <p className="results-panel__saving">Guardando partida...</p>
+      )}
+      {saved && (
+        <p className="results-panel__saved">✓ Partida guardada correctamente</p>
+      )}
+
       <div className="results-panel__tabs">
         <button type="button" className={tab === 'current' ? 'active' : ''} onClick={() => setTab('current')}>
           Partida actual
@@ -102,15 +122,44 @@ export function ResultsPanel({ visible, lastAssessmentId, gameCompleted }: Props
 
       {tab === 'current' ? (
         <div className="results-panel__content">
-          <button
-            type="button"
-            className="btn btn-outline btn-full"
-            onClick={loadAnalysis}
-            disabled={loading || !lastAssessmentId}
-          >
-            {loading ? 'Generando análisis...' : 'Ver análisis completo'}
-          </button>
-          {analysisHtml && <div className="results-panel__details" dangerouslySetInnerHTML={{ __html: analysisHtml }} />}
+          {canShowAnalysis ? (
+            <>
+              <button
+                type="button"
+                className="btn btn-outline btn-full"
+                onClick={loadAnalysis}
+                disabled={loading}
+              >
+                {loading ? 'Generando análisis...' : 'Ver análisis completo'}
+              </button>
+              {analysis && (
+                <div className="results-panel__details">
+                  <div className="results-panel__row">
+                    <span>Riesgo cognitivo</span>
+                    <strong>{analysis.risk}</strong>
+                  </div>
+                  <div className="results-panel__row">
+                    <span>Predicción</span>
+                    <strong>{analysis.prediction}</strong>
+                  </div>
+                  <div className="results-panel__row">
+                    <span>Fecha</span>
+                    <strong>{analysis.date}</strong>
+                  </div>
+                  <div className="results-panel__analysis">
+                    <h4>Análisis con IA</h4>
+                    {analysis.text.split('\n').map((line, i) => (
+                      <p key={i}>{line}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="results-panel__wait">
+              {gameCompleted ? 'Esperando confirmación del guardado...' : 'Termina el juego para ver el análisis.'}
+            </p>
+          )}
         </div>
       ) : (
         <div className="results-panel__history">
@@ -125,7 +174,9 @@ export function ResultsPanel({ visible, lastAssessmentId, gameCompleted }: Props
               </a>
             );
           })}
-          <a href="/history" className="results-panel__link">Ver historial completo →</a>
+          <a href="/history" className="results-panel__link">
+            Ver historial completo →
+          </a>
         </div>
       )}
     </aside>
