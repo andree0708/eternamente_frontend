@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { api } from '../../lib/api';
+import { hashPasswordForTransport } from '../../lib/password';
+import { mapAuthError, validateEmail, validateFullName, validatePassword } from '../../lib/validation';
 import '../../styles/auth.css';
 
 type Tab = 'login' | 'register';
@@ -8,6 +10,7 @@ export function AuthPage() {
   const [tab, setTab] = useState<Tab>('login');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const token = localStorage.getItem('eternamente_token');
   const user = localStorage.getItem('eternamente_user');
@@ -22,32 +25,39 @@ export function AuthPage() {
     const form = e.currentTarget;
     const email = (form.elements.namedItem('email') as HTMLInputElement).value.trim();
     const password = (form.elements.namedItem('password') as HTMLInputElement).value;
-    if (!email || !password) {
-      setMessage({ text: 'Completa todos los campos.', type: 'error' });
+
+    const errors: Record<string, string> = {};
+    const emailErr = validateEmail(email);
+    const passErr = validatePassword(password);
+    if (emailErr) errors.email = emailErr;
+    if (passErr) errors.password = passErr;
+    if (Object.keys(errors).length) {
+      setFieldErrors(errors);
+      setMessage({ text: 'Revisa los campos marcados.', type: 'error' });
       return;
     }
+
+    setFieldErrors({});
     setLoading(true);
     setMessage(null);
     try {
+      const passwordHash = await hashPasswordForTransport(password);
       const result = await api<{ token: string; userId: string; email: string; fullName: string }>(
         '/api/auth/login',
         'POST',
-        { email, password },
+        { email, password: passwordHash },
         false
       );
-      if (!result.token) throw new Error('No se recibió token');
+      if (!result.token) throw new Error('No se recibió token de sesión');
       localStorage.setItem('eternamente_token', result.token);
       localStorage.setItem(
         'eternamente_user',
         JSON.stringify({ id: result.userId, email: result.email, fullName: result.fullName })
       );
-      setMessage({ text: '¡Bienvenido! Redirigiendo...', type: 'success' });
+      setMessage({ text: 'Bienvenido. Redirigiendo…', type: 'success' });
       window.location.href = '/games';
     } catch (err) {
-      setMessage({
-        text: err instanceof Error ? err.message : 'Error al iniciar sesión',
-        type: 'error',
-      });
+      setMessage({ text: mapAuthError(err), type: 'error' });
       setLoading(false);
     }
   };
@@ -59,32 +69,41 @@ export function AuthPage() {
     const email = (form.elements.namedItem('regEmail') as HTMLInputElement).value.trim();
     const password = (form.elements.namedItem('regPassword') as HTMLInputElement).value;
     const fullName = (form.elements.namedItem('regName') as HTMLInputElement).value.trim();
-    if (!email || !password || !fullName) {
-      setMessage({ text: 'Completa todos los campos.', type: 'error' });
+
+    const errors: Record<string, string> = {};
+    const emailErr = validateEmail(email);
+    const passErr = validatePassword(password);
+    const nameErr = validateFullName(fullName);
+    if (emailErr) errors.regEmail = emailErr;
+    if (passErr) errors.regPassword = passErr;
+    if (nameErr) errors.regName = nameErr;
+    if (Object.keys(errors).length) {
+      setFieldErrors(errors);
+      setMessage({ text: 'Revisa los campos marcados.', type: 'error' });
       return;
     }
+
+    setFieldErrors({});
     setLoading(true);
     setMessage(null);
     try {
+      const passwordHash = await hashPasswordForTransport(password);
       const result = await api<{ token: string; userId: string; email: string; fullName: string }>(
         '/api/users',
         'POST',
-        { email, password, fullName, role: 'PATIENT' },
+        { email, password: passwordHash, fullName, role: 'PATIENT' },
         false
       );
-      if (!result.token) throw new Error('No se recibió token');
+      if (!result.token) throw new Error('No se recibió token de sesión');
       localStorage.setItem('eternamente_token', result.token);
       localStorage.setItem(
         'eternamente_user',
         JSON.stringify({ id: result.userId, email: result.email, fullName: result.fullName })
       );
-      setMessage({ text: '¡Cuenta creada! Redirigiendo...', type: 'success' });
+      setMessage({ text: 'Cuenta creada. Redirigiendo…', type: 'success' });
       window.location.href = '/games';
     } catch (err) {
-      setMessage({
-        text: err instanceof Error ? err.message : 'Error al registrarse',
-        type: 'error',
-      });
+      setMessage({ text: mapAuthError(err), type: 'error' });
       setLoading(false);
     }
   };
@@ -94,24 +113,28 @@ export function AuthPage() {
       <div className="auth-page__bg" />
       <div className="auth-page__card fade-in">
         <div className="auth-page__brand">
-          <div className="auth-page__logo">◉</div>
+          <img src="/logo.svg" alt="EternaMente" className="auth-page__logo-img" width={80} height={80} />
           <h1>EternaMente</h1>
-          <p>Evaluación Cognitiva</p>
+          <p>Evaluación cognitiva para el adulto mayor</p>
         </div>
 
-        <div className="auth-page__tabs">
+        <div className="auth-page__tabs" role="tablist">
           <button
             type="button"
+            role="tab"
+            aria-selected={tab === 'login'}
             className={tab === 'login' ? 'active' : ''}
-            onClick={() => { setTab('login'); setMessage(null); }}
+            onClick={() => { setTab('login'); setMessage(null); setFieldErrors({}); }}
             disabled={loading}
           >
             Iniciar sesión
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={tab === 'register'}
             className={tab === 'register' ? 'active' : ''}
-            onClick={() => { setTab('register'); setMessage(null); }}
+            onClick={() => { setTab('register'); setMessage(null); setFieldErrors({}); }}
             disabled={loading}
           >
             Registrarse
@@ -119,47 +142,93 @@ export function AuthPage() {
         </div>
 
         {tab === 'login' ? (
-          <form className="auth-page__form" onSubmit={handleLogin}>
+          <form className="auth-page__form" onSubmit={handleLogin} noValidate>
             <label>
               Correo electrónico
-              <input name="email" type="email" className="input" placeholder="tu@email.com" required disabled={loading} />
+              <input
+                name="email"
+                type="email"
+                autoComplete="email"
+                className={`input ${fieldErrors.email ? 'input--error' : ''}`}
+                placeholder="tu@email.com"
+                disabled={loading}
+                aria-invalid={!!fieldErrors.email}
+              />
+              {fieldErrors.email && <span className="auth-page__field-error">{fieldErrors.email}</span>}
             </label>
             <label>
               Contraseña
-              <input name="password" type="password" className="input" placeholder="••••••••" required disabled={loading} />
+              <input
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                className={`input ${fieldErrors.password ? 'input--error' : ''}`}
+                placeholder="Mínimo 6 caracteres"
+                disabled={loading}
+                aria-invalid={!!fieldErrors.password}
+              />
+              {fieldErrors.password && <span className="auth-page__field-error">{fieldErrors.password}</span>}
             </label>
             <button type="submit" className="btn btn-accent btn-full" disabled={loading}>
-              {loading ? 'Entrando...' : 'Entrar'}
+              {loading ? 'Entrando…' : 'Entrar'}
             </button>
           </form>
         ) : (
-          <form className="auth-page__form" onSubmit={handleRegister}>
+          <form className="auth-page__form" onSubmit={handleRegister} noValidate>
             <label>
               Correo electrónico
-              <input name="regEmail" type="email" className="input" placeholder="tu@email.com" required disabled={loading} />
+              <input
+                name="regEmail"
+                type="email"
+                autoComplete="email"
+                className={`input ${fieldErrors.regEmail ? 'input--error' : ''}`}
+                placeholder="tu@email.com"
+                disabled={loading}
+              />
+              {fieldErrors.regEmail && <span className="auth-page__field-error">{fieldErrors.regEmail}</span>}
             </label>
             <label>
               Contraseña
-              <input name="regPassword" type="password" className="input" placeholder="••••••••" required disabled={loading} />
+              <input
+                name="regPassword"
+                type="password"
+                autoComplete="new-password"
+                className={`input ${fieldErrors.regPassword ? 'input--error' : ''}`}
+                placeholder="Mínimo 6 caracteres"
+                disabled={loading}
+              />
+              {fieldErrors.regPassword && <span className="auth-page__field-error">{fieldErrors.regPassword}</span>}
             </label>
             <label>
               Nombre completo
-              <input name="regName" type="text" className="input" placeholder="Tu nombre" required disabled={loading} />
+              <input
+                name="regName"
+                type="text"
+                autoComplete="name"
+                className={`input ${fieldErrors.regName ? 'input--error' : ''}`}
+                placeholder="Tu nombre"
+                disabled={loading}
+              />
+              {fieldErrors.regName && <span className="auth-page__field-error">{fieldErrors.regName}</span>}
             </label>
             <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
-              {loading ? 'Creando cuenta...' : 'Crear cuenta'}
+              {loading ? 'Creando cuenta…' : 'Crear cuenta'}
             </button>
           </form>
         )}
 
         {message && (
-          <div className={`auth-page__message auth-page__message--${message.type}`}>
+          <div
+            className={`auth-page__message auth-page__message--${message.type}`}
+            role="alert"
+            aria-live="polite"
+          >
             {message.text}
           </div>
         )}
       </div>
       <footer className="auth-page__footer">
-        Sistema de evaluación cognitiva para el adulto mayor
+        Herramienta de apoyo — no sustituye evaluación médica profesional
       </footer>
     </div>
   );
