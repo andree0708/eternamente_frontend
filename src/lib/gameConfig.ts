@@ -11,32 +11,32 @@ export interface GameMeta {
 
 export const GAME_META: Record<GameType, GameMeta> = {
   memory: {
-    title: 'Memoria de Pares',
+    title: 'Memorama de Pares',
     subtitle: 'Encuentra todos los pares iguales',
-    evaluates: 'Memoria de trabajo, atención y velocidad de reconocimiento',
+    evaluates: 'Memoria visual episódica y memoria de trabajo',
     instructions: {
       title: '¿Cómo se juega?',
       steps: [
-        'Toca una tarjeta para voltearla y ver el símbolo.',
-        'Toca otra tarjeta: si coinciden, quedan visibles.',
-        'Si no coinciden, se ocultan de nuevo. Memoriza las posiciones.',
-        'Encuentra todos los pares con el menor número de movimientos.',
+        'Toca una tarjeta para ver el símbolo.',
+        'Toca otra: si coinciden, quedan visibles.',
+        'Memoriza las posiciones cuando no coincidan.',
+        'Encuentra todos los pares con pocos movimientos.',
       ],
     },
     stats: ['Movimientos', 'Errores', 'Pares'],
     accent: '#667eea',
   },
   stroop: {
-    title: 'Test de Stroop',
-    subtitle: 'Nombre el color de la tinta, no la palabra',
-    evaluates: 'Control inhibitorio, flexibilidad cognitiva y velocidad de procesamiento',
+    title: 'Stroop de Colores',
+    subtitle: 'Elige el color de la tinta, no la palabra',
+    evaluates: 'Control inhibitorio e interferencia cognitiva',
     instructions: {
       title: '¿Cómo se juega?',
       steps: [
-        'Verás una palabra de color (ej: "ROJO" escrita en tinta azul).',
-        'Tu tarea es IGNORAR el significado de la palabra.',
-        'Selecciona el botón del COLOR DE LA TINTA en que está escrita.',
-        'Responde lo más rápido y preciso que puedas.',
+        'Verás una palabra de color (ej: ROJO en tinta azul).',
+        'Ignora el significado de la palabra.',
+        'Pulsa el botón del color de la tinta.',
+        'Responde con calma y precisión.',
       ],
       warning: 'No elijas lo que dice la palabra — solo el color visual.',
     },
@@ -44,43 +44,109 @@ export const GAME_META: Record<GameType, GameMeta> = {
     accent: '#f5576c',
   },
   navigation: {
-    title: 'Navegación Espacial',
-    subtitle: 'Lleva tu estrella hasta la meta',
-    evaluates: 'Orientación espacial, memoria espacial y planificación de rutas',
+    title: 'Conecta los Puntos',
+    subtitle: 'Lleva la estrella ★ hasta la meta ⚑',
+    evaluates: 'Planificación y velocidad (inspirado en Trail Making)',
     instructions: {
       title: '¿Cómo se juega?',
       steps: [
         'Tu personaje es la estrella ★. La meta es el banderín ⚑.',
-        'Usa las flechas del teclado o los botones para moverte.',
-        'Completa 5 niveles: en cada uno la meta cambia de lugar.',
-        'Planifica la ruta más corta posible.',
+        'Usa las flechas grandes o el teclado.',
+        'Completa todos los niveles.',
+        'Busca el camino más corto.',
       ],
     },
     stats: ['Nivel', 'Movimientos', 'Errores'],
     accent: '#4facfe',
   },
   whackamole: {
-    title: 'Whack-a-Mole',
-    subtitle: 'Toca el hámster, ignora la X',
-    evaluates: 'Control inhibitorio (Go/No-Go), tiempo de reacción y atención sostenida',
+    title: 'Flash de Colores',
+    subtitle: 'Toca el círculo verde, ignora la X roja',
+    evaluates: 'Atención sostenida y respuesta Go/No-Go',
     instructions: {
       title: '¿Cómo se juega?',
       steps: [
-        'Cuando aparezca el hámster 🐹, tócalo rápido.',
-        'Si aparece una X roja, NO la toques (es distractor).',
+        'Cuando aparezca el objetivo verde, tócalo rápido.',
+        'Si aparece una X roja, no la toques.',
         'Si no respondes a tiempo, cuenta como error.',
         'Mantén la atención durante toda la ronda.',
       ],
-      warning: 'Tocar la X es un error de inhibición (falso positivo).',
+      warning: 'Tocar la X es un error de inhibición.',
     },
     stats: ['Aciertos', 'Errores', 'Tiempo ms'],
     accent: '#fa709a',
   },
+  digitspan: {
+    title: 'Secuencia de Números',
+    subtitle: 'Repite los números en el mismo orden',
+    evaluates: 'Memoria de trabajo verbal (span de dígitos)',
+    instructions: {
+      title: '¿Cómo se juega?',
+      steps: [
+        'Observa la secuencia de números que aparece.',
+        'Cuando termine, escríbela en el mismo orden.',
+        'Cada nivel añade un dígito más.',
+        'Puedes usar el teclado numérico en pantalla.',
+      ],
+    },
+    stats: ['Nivel', 'Aciertos', 'Errores'],
+    accent: '#5c6bc0',
+  },
+  corsi: {
+    title: 'Reproduce el Patrón',
+    subtitle: 'Memoriza y repite la secuencia de casillas',
+    evaluates: 'Memoria visoespacial (tipo Corsi)',
+    instructions: {
+      title: '¿Cómo se juega?',
+      steps: [
+        'Las casillas se iluminarán una tras otra.',
+        'Memoriza el orden.',
+        'Toca las mismas casillas en el mismo orden.',
+        'La secuencia se alarga en cada nivel.',
+      ],
+    },
+    stats: ['Nivel', 'Aciertos', 'Errores'],
+    accent: '#26a69a',
+  },
+  orientation: {
+    title: 'Orientación Temporal',
+    subtitle: 'Responde sobre la fecha y el tiempo actual',
+    evaluates: 'Orientación temporal (día, mes, año, estación)',
+    instructions: {
+      title: '¿Cómo se juega?',
+      steps: [
+        'Lee cada pregunta con calma.',
+        'Elige la respuesta correcta entre las opciones grandes.',
+        'Usa la fecha real de hoy como referencia.',
+        'No hay límite estricto de tiempo.',
+      ],
+    },
+    stats: ['Aciertos', 'Errores', 'Preguntas'],
+    accent: '#8d6e63',
+  },
+  arithmetic: {
+    title: 'Cálculo Mental',
+    subtitle: 'Resuelve sumas y restas simples',
+    evaluates: 'Velocidad de procesamiento y cálculo aritmético',
+    instructions: {
+      title: '¿Cómo se juega?',
+      steps: [
+        'Aparecerá una operación (suma o resta).',
+        'Elige la respuesta correcta antes de que se acabe el tiempo.',
+        'Las operaciones usan números pequeños.',
+        'Intenta ser rápido y exacto.',
+      ],
+    },
+    stats: ['Aciertos', 'Errores', 'Tiempo ms'],
+    accent: '#ff8f00',
+  },
 };
 
 export function parseGameType(value: string | null): GameType {
-  if (value === 'stroop' || value === 'navigation' || value === 'whackamole' || value === 'memory') {
-    return value;
-  }
+  const valid: GameType[] = [
+    'memory', 'stroop', 'navigation', 'whackamole',
+    'digitspan', 'corsi', 'orientation', 'arithmetic',
+  ];
+  if (value && valid.includes(value as GameType)) return value as GameType;
   return 'memory';
 }

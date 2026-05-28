@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import { GameCompleteBanner } from './GameCompleteBanner';
 import { GameInstructions } from './GameInstructions';
 import { GAME_META } from '../../lib/gameConfig';
+import { useGameConfig } from '../../hooks/useGameConfig';
 
 const COLORS = [
   { name: 'rojo', hex: '#E53935', label: 'Rojo' },
@@ -9,10 +10,6 @@ const COLORS = [
   { name: 'verde', hex: '#43A047', label: 'Verde' },
   { name: 'amarillo', hex: '#FDD835', label: 'Amarillo' },
 ] as const;
-
-const ROUNDS = 20;
-/** Segundos de exposición de la palabra antes de poder responder */
-const WORD_DISPLAY_MS = 4000;
 
 type Phase = 'stimulus' | 'response';
 
@@ -23,6 +20,9 @@ interface Props {
 
 export function StroopGame({ onComplete, onStatsChange }: Props) {
   const meta = GAME_META.stroop;
+  const { settings } = useGameConfig('stroop');
+  const ROUNDS = settings.rounds;
+  const WORD_DISPLAY_MS = settings.wordDisplayMs;
   const [played, setPlayed] = useState(0);
   const [correct, setCorrect] = useState(0);
   const [errors, setErrors] = useState(0);

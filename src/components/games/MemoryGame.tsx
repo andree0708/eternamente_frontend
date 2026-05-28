@@ -2,16 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameCompleteBanner } from './GameCompleteBanner';
 import { GameInstructions } from './GameInstructions';
 import { GAME_META } from '../../lib/gameConfig';
+import { useGameConfig } from '../../hooks/useGameConfig';
 
 const SYMBOLS = ['★', '♥', '♦', '♣', '♠', '✿', '☀', '☁', '🌙', '🔔', '🍀', '⭐'];
 
 type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';
-
-const DIFFICULTY_CONFIG: Record<Difficulty, { pairs: number; cols: number; label: string }> = {
-  EASY: { pairs: 6, cols: 4, label: 'Fácil (6 pares)' },
-  MEDIUM: { pairs: 8, cols: 4, label: 'Medio (8 pares)' },
-  HARD: { pairs: 12, cols: 6, label: 'Difícil (12 pares)' },
-};
 
 interface Card {
   id: number;
@@ -47,6 +42,12 @@ interface Props {
 
 export function MemoryGame({ onComplete, onStatsChange }: Props) {
   const meta = GAME_META.memory;
+  const { settings } = useGameConfig('memory');
+  const DIFFICULTY_CONFIG: Record<Difficulty, { pairs: number; cols: number; label: string }> = {
+    EASY: { pairs: settings.pairsEasy, cols: settings.colsEasy, label: `Fácil (${settings.pairsEasy} pares)` },
+    MEDIUM: { pairs: settings.pairsMedium, cols: settings.colsMedium, label: `Medio (${settings.pairsMedium} pares)` },
+    HARD: { pairs: settings.pairsHard, cols: settings.colsHard, label: `Difícil (${settings.pairsHard} pares)` },
+  };
   const [difficulty, setDifficulty] = useState<Difficulty>('EASY');
   const config = DIFFICULTY_CONFIG[difficulty];
 

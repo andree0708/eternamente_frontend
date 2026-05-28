@@ -2,9 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameCompleteBanner } from './GameCompleteBanner';
 import { GameInstructions } from './GameInstructions';
 import { GAME_META } from '../../lib/gameConfig';
-
-const MAX_LEVEL = 5;
-const GRID_SIZE = 5;
+import { useGameConfig } from '../../hooks/useGameConfig';
 
 interface Props {
   onComplete: (metrics: Record<string, unknown>) => void;
@@ -13,6 +11,9 @@ interface Props {
 
 export function NavigationGame({ onComplete, onStatsChange }: Props) {
   const meta = GAME_META.navigation;
+  const { settings } = useGameConfig('navigation');
+  const MAX_LEVEL = settings.maxLevel;
+  const GRID_SIZE = settings.gridSize;
   const [level, setLevel] = useState(1);
   const [currentPos, setCurrentPos] = useState(0);
   const [targetPos, setTargetPos] = useState(0);

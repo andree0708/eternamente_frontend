@@ -2,10 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameCompleteBanner } from './GameCompleteBanner';
 import { GameInstructions } from './GameInstructions';
 import { GAME_META } from '../../lib/gameConfig';
-
-const ROUNDS = 30;
-const GRID = 3;
-const SHOW_MS = 1400;
+import { useGameConfig } from '../../hooks/useGameConfig';
 
 type CellState = 'idle' | 'target' | 'distractor' | 'hit' | 'miss';
 
@@ -16,6 +13,10 @@ interface Props {
 
 export function WhackGame({ onComplete, onStatsChange }: Props) {
   const meta = GAME_META.whackamole;
+  const { settings } = useGameConfig('whackamole');
+  const ROUNDS = settings.rounds;
+  const GRID = settings.gridSize;
+  const SHOW_MS = settings.showMs;
   const [cells, setCells] = useState<CellState[]>(Array(GRID * GRID).fill('idle'));
   const [played, setPlayed] = useState(0);
   const [correct, setCorrect] = useState(0);
