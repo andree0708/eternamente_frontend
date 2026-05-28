@@ -7,23 +7,24 @@ const { title = "EternaMente" } = Astro.props;
 	<head>
 		<meta charset="utf-8" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
+		<link rel="apple-touch-icon" href="/logo.svg" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<meta name="description" content="EternaMente - Evaluación Cognitiva" />
+		<meta name="description" content="EternaMente — detección temprana de deterioro cognitivo leve en adultos mayores" />
+		<meta name="theme-color" content="#1B4D6E" />
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 		<title>{title}</title>
 		<style is:global>
 			:root {
-				--primary: #2D3748;
-				--primary-light: #4A5568;
-				--accent: #B8860B;
-				--accent-light: #DAA520;
-				--bg-cream: #FAF8F5;
+				--primary: #1B4D6E;
+				--primary-light: #2E7D9A;
+				--accent: #C68B2A;
+				--accent-light: #E0A84B;
+				--bg-cream: #F7F9FC;
 				--bg-white: #FFFFFF;
-				--text-dark: #1A202C;
-				--text-muted: #718096;
+				--text-dark: #0F172A;
+				--text-muted: #475569;
 				--success: #38A169;
 				--error: #E53E3E;
 				--border: #E2E8F0;
@@ -44,7 +45,7 @@ const { title = "EternaMente" } = Astro.props;
 			}
 
 			html {
-				font-size: 16px;
+				font-size: 18px;
 				scroll-behavior: smooth;
 			}
 
@@ -67,10 +68,11 @@ const { title = "EternaMente" } = Astro.props;
 				align-items: center;
 				justify-content: center;
 				gap: 8px;
-				padding: 12px 24px;
+				min-height: 48px;
+				padding: 14px 28px;
 				font-family: var(--font-body);
-				font-size: 14px;
-				font-weight: 500;
+				font-size: 1.0625rem;
+				font-weight: 600;
 				border-radius: var(--radius-md);
 				border: none;
 				cursor: pointer;
@@ -146,9 +148,10 @@ const { title = "EternaMente" } = Astro.props;
 
 			.input {
 				width: 100%;
-				padding: 14px 16px;
+				min-height: 52px;
+				padding: 16px 18px;
 				font-family: var(--font-body);
-				font-size: 15px;
+				font-size: 1.0625rem;
 				border: 2px solid var(--border);
 				border-radius: var(--radius-md);
 				background: var(--bg-white);

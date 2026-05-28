@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="EternaMente">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1B4D6E"/>
+      <stop offset="100%" stop-color="#3A9BB5"/>
+    </linearGradient>
+  </defs>
+  <circle cx="60" cy="60" r="56" fill="url(#bg)"/>
+  <ellipse cx="60" cy="52" rx="22" ry="26" fill="#F8F4EC"/>
+  <path fill="#D4A84B" d="M48 48h24v6H48zm0 10h24v4H48z"/>
+  <rect x="52" y="78" width="16" height="18" rx="4" fill="#F8F4EC"/>
+</svg>

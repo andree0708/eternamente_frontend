@@ -29,28 +29,33 @@
   margin-bottom: 28px;
 }
 
-.auth-page__logo {
-  width: 56px;
-  height: 56px;
-  margin: 0 auto 12px;
+.auth-page__logo-img {
+  display: block;
+  margin: 0 auto 16px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #b8860b, #daa520);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
+  box-shadow: 0 8px 24px rgba(27, 77, 110, 0.25);
 }
 
 .auth-page__brand h1 {
   font-family: var(--font-display);
-  font-size: 28px;
+  font-size: 2rem;
   color: var(--primary);
 }
 
 .auth-page__brand p {
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: 1.0625rem;
+  line-height: 1.5;
+}
+
+.auth-page__field-error {
+  color: var(--error);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.input--error {
+  border-color: var(--error) !important;
 }
 
 .auth-page__tabs {
