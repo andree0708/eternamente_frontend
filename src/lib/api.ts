@@ -116,6 +116,14 @@ export async function api<T = Record<string, unknown>>(
     if (resp.status === 401) {
       throw new Error('No autorizado. Cierra sesión y vuelve a entrar.');
     }
+    if (resp.status === 409) {
+      throw new Error(message || 'No se pudo guardar la partida en el servidor.');
+    }
+    if (resp.status >= 500) {
+      throw new Error(
+        message || 'Error del servidor al guardar. Si persiste, el backend en Render debe actualizarse.'
+      );
+    }
     throw new Error(message);
   }
 
