@@ -7,6 +7,10 @@ import { NavigationGame } from './NavigationGame';
 import { ResultsPanel } from './ResultsPanel';
 import { StroopGame } from './StroopGame';
 import { WhackGame } from './WhackGame';
+import { DigitSpanGame } from './DigitSpanGame';
+import { CorsiGame } from './CorsiGame';
+import { OrientationGame } from './OrientationGame';
+import { ArithmeticGame } from './ArithmeticGame';
 import '../../styles/games.css';
 
 function getGameTypeFromUrl(): string {
@@ -69,6 +73,14 @@ export function GamePage() {
         return <WhackGame {...props} onStatsChange={(v) => setStats(v)} />;
       case 'navigation':
         return <NavigationGame {...props} onStatsChange={(v) => setStats(v)} />;
+      case 'digitspan':
+        return <DigitSpanGame {...props} onStatsChange={(v) => setStats(v)} />;
+      case 'corsi':
+        return <CorsiGame {...props} onStatsChange={(v) => setStats(v)} />;
+      case 'orientation':
+        return <OrientationGame {...props} onStatsChange={(v) => setStats(v)} />;
+      case 'arithmetic':
+        return <ArithmeticGame {...props} onStatsChange={(v) => setStats(v)} />;
       default:
         return (
           <MemoryGame

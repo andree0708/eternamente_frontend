@@ -778,3 +778,157 @@
 .btn-full {
   width: 100%;
 }
+
+/* Secuencia de números */
+.digit-game__level,
+.corsi-game__level,
+.orient-game__progress,
+.arith-game__meta {
+  text-align: center;
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.digit-game__display {
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.digit-game__digit {
+  font-size: 4rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.digit-game__input {
+  text-align: center;
+  font-size: 2rem;
+  letter-spacing: 0.3em;
+  margin-bottom: 20px;
+  min-height: 56px;
+}
+
+.digit-game__pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.digit-game__key {
+  min-height: 56px;
+  font-size: 1.5rem;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border);
+  background: #fff;
+  cursor: pointer;
+}
+
+.digit-game__key--wide {
+  grid-column: span 2;
+}
+
+.digit-game__submit {
+  grid-column: span 3;
+  margin-top: 8px;
+}
+
+/* Corsi */
+.corsi-game__grid {
+  display: grid;
+  gap: 12px;
+  max-width: 280px;
+  margin: 0 auto 20px;
+}
+
+.corsi-game__cell {
+  aspect-ratio: 1;
+  min-height: 72px;
+  border-radius: var(--radius-md);
+  border: 3px solid var(--border);
+  background: #e2e8f0;
+  cursor: pointer;
+}
+
+.corsi-game__cell.active {
+  background: var(--accent);
+  border-color: var(--accent-light);
+}
+
+.corsi-game__phase {
+  text-align: center;
+  font-size: 1.125rem;
+}
+
+/* Orientación */
+.orient-game__prompt {
+  font-size: 1.375rem;
+  text-align: center;
+  margin: 24px 0;
+  line-height: 1.5;
+}
+
+.orient-game__options {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.orient-game__opt,
+.arith-game__opt {
+  min-height: 56px;
+  padding: 16px 20px;
+  font-size: 1.125rem;
+  font-weight: 600;
+  border: 2px solid var(--primary);
+  border-radius: var(--radius-md);
+  background: #fff;
+  cursor: pointer;
+  text-transform: capitalize;
+}
+
+.orient-game__opt:hover,
+.arith-game__opt:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+/* Cálculo mental */
+.arith-game__expr {
+  font-size: 2.5rem;
+  text-align: center;
+  font-weight: 700;
+  margin: 24px 0;
+  color: var(--primary);
+}
+
+.arith-game__options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.arith-game--ok {
+  animation: flashOk 0.4s ease;
+}
+
+.arith-game--bad {
+  animation: flashBad 0.4s ease;
+}
+
+@keyframes flashOk {
+  50% { background: rgba(56, 161, 105, 0.15); }
+}
+
+@keyframes flashBad {
+  50% { background: rgba(229, 62, 62, 0.12); }
+}

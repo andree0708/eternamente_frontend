@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type CSSProperties } from 'react';
 import { api } from '../../lib/api';
-import { getGameInfo, type GameType } from '../../lib/games';
+import { ALL_GAME_TYPES, getGameInfo, type GameType } from '../../lib/games';
 import '../../styles/history.css';
 
 interface Assessment {
@@ -24,10 +24,10 @@ interface Summary {
 
 const FILTERS: { id: 'all' | GameType; label: string }[] = [
   { id: 'all', label: 'Todos' },
-  { id: 'memory', label: '🧠 Memoria' },
-  { id: 'stroop', label: '🎨 Stroop' },
-  { id: 'navigation', label: '🧭 Navegación' },
-  { id: 'whackamole', label: '🐹 Whack-a-Mole' },
+  ...ALL_GAME_TYPES.map((id) => {
+    const info = getGameInfo({ gameType: id });
+    return { id, label: `${info.icon} ${info.name}` };
+  }),
 ];
 
 export function HistoryPage() {
