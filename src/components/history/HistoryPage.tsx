@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type CSSProperties } from 'react';
 import { api } from '../../lib/api';
-import { ALL_GAME_TYPES, getGameInfo, type GameType } from '../../lib/games';
+import { ALL_GAME_TYPES, getGameCatalog, getGameInfo, type GameType } from '../../lib/games';
+import { exportClinicalPdf } from '../../lib/pdfExport';
 import '../../styles/history.css';
 
 interface Assessment {
@@ -119,6 +120,48 @@ export function HistoryPage() {
           <h1>Mi historial de evaluaciones</h1>
           <p>Todas tus partidas, métricas y análisis cognitivo</p>
         </header>
+
+        <button
+          type="button"
+          className="history-export-btn"
+          onClick={() => {
+            const catalog = getGameCatalog();
+            const gameRows = catalog.map((g) => {
+              const sessions = assessments.filter(
+                (a) => (a.gameType || (a.metrics?.gameType as string)) === g.type
+              );
+              const avgRisk = sessions.length
+                ? sessions.reduce((s, a) => s + a.riskScore, 0) / sessions.length
+                : 0;
+              const avgAcc = sessions.length
+                ? sessions.reduce((s, a) => {
+                    const acc = a.metrics?.accuracy as number | undefined;
+                    return s + (acc ?? 0);
+                  }, 0) / sessions.length
+                : null;
+              return {
+                gameType: g.type,
+                name: g.name,
+                icon: g.icon,
+                sessions: sessions.length,
+                avgRiskScore: avgRisk,
+                avgAccuracy: avgAcc != null ? avgAcc : null,
+              };
+            });
+            exportClinicalPdf({
+              patientName: user?.fullName || user?.email || 'Paciente',
+              summary: {
+                totalSessions: assessments.length,
+                avgRiskScore: summary?.avgRiskScore ?? 0,
+                avgAccuracy: summary?.avgAccuracy ?? null,
+              },
+              games: gameRows,
+              trend: [],
+            });
+          }}
+        >
+          Exportar PDF
+        </button>
 
         {summary && (
           <section className="history-summary">
