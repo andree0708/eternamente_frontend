@@ -152,6 +152,7 @@ export function AuthPage() {
                 name="email"
                 type="email"
                 autoComplete="email"
+                maxLength={254}
                 className={`input ${fieldErrors.email ? 'input--error' : ''}`}
                 placeholder="tu@email.com"
                 disabled={loading}
@@ -165,6 +166,7 @@ export function AuthPage() {
                 name="password"
                 type="password"
                 autoComplete="current-password"
+                maxLength={128}
                 className={`input ${fieldErrors.password ? 'input--error' : ''}`}
                 placeholder="Mínimo 6 caracteres"
                 disabled={loading}
@@ -184,6 +186,7 @@ export function AuthPage() {
                 name="regEmail"
                 type="email"
                 autoComplete="email"
+                maxLength={254}
                 className={`input ${fieldErrors.regEmail ? 'input--error' : ''}`}
                 placeholder="tu@email.com"
                 disabled={loading}
@@ -196,6 +199,7 @@ export function AuthPage() {
                 name="regPassword"
                 type="password"
                 autoComplete="new-password"
+                maxLength={128}
                 className={`input ${fieldErrors.regPassword ? 'input--error' : ''}`}
                 placeholder="Mínimo 6 caracteres"
                 disabled={loading}
@@ -208,6 +212,7 @@ export function AuthPage() {
                 name="regName"
                 type="text"
                 autoComplete="name"
+                maxLength={100}
                 className={`input ${fieldErrors.regName ? 'input--error' : ''}`}
                 placeholder="Tu nombre"
                 disabled={loading}

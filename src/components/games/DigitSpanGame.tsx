@@ -46,9 +46,9 @@ export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
   }, [length]);
 
   useEffect(() => {
-    if (!started || finished || loading) return;
+    if (!started || finished) return;
     startRound();
-  }, [level, started, finished, startRound, loading]);
+  }, [level, started, finished, startRound]);
 
   useEffect(() => {
     onStatsChange?.([level, correctCount, errors]);
