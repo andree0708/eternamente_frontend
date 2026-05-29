@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 interface ExportSummary {
   totalSessions: number;
@@ -16,17 +16,10 @@ interface ExportGameRow {
   avgAccuracy: number | null;
 }
 
-interface ExportTrendPoint {
-  playedAt: string;
-  riskScore: number;
-  gameType: string;
-}
-
 interface ExportData {
   patientName: string;
   summary: ExportSummary;
   games: ExportGameRow[];
-  trend: ExportTrendPoint[];
 }
 
 export function exportClinicalPdf(data: ExportData) {
@@ -40,7 +33,7 @@ export function exportClinicalPdf(data: ExportData) {
 
   let y = margin;
 
-  // --- Encabezado clínico ---
+  // Header azul
   doc.setFillColor(27, 77, 110);
   doc.rect(0, 0, pageW, 38, 'F');
   doc.setTextColor(255, 255, 255);
@@ -54,7 +47,7 @@ export function exportClinicalPdf(data: ExportData) {
 
   y = 50;
 
-  // --- Datos del paciente ---
+  // Datos del paciente
   doc.setTextColor(44, 44, 44);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
@@ -65,12 +58,12 @@ export function exportClinicalPdf(data: ExportData) {
   doc.text(`Nombre: ${data.patientName}`, margin, y);
   y += 12;
 
-  // --- Línea separadora ---
+  // Línea
   doc.setDrawColor(200, 200, 200);
   doc.line(margin, y, pageW - margin, y);
   y += 8;
 
-  // --- Resumen de métricas ---
+  // Resumen
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.text('Resumen de m\u00e9tricas', margin, y);
@@ -80,18 +73,15 @@ export function exportClinicalPdf(data: ExportData) {
   const accPct = data.summary.avgAccuracy != null
     ? Math.round(data.summary.avgAccuracy * 100)
     : null;
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
 
-  const summaryRows = [
-    ['Sesiones totales', String(data.summary.totalSessions)],
-    ['Riesgo promedio', `${riskPct}%`],
-    ['Precisi\u00f3n promedio', accPct != null ? `${accPct}%` : '---'],
-  ];
-  (doc as any).autoTable({
+  autoTable(doc, {
     startY: y,
     head: [['M\u00e9trica', 'Valor']],
-    body: summaryRows,
+    body: [
+      ['Sesiones totales', String(data.summary.totalSessions)],
+      ['Riesgo promedio', `${riskPct}%`],
+      ['Precisi\u00f3n promedio', accPct != null ? `${accPct}%` : '---'],
+    ],
     theme: 'grid',
     headStyles: { fillColor: [27, 77, 110], textColor: 255, fontStyle: 'bold', fontSize: 10 },
     bodyStyles: { fontSize: 10 },
@@ -100,7 +90,7 @@ export function exportClinicalPdf(data: ExportData) {
   });
   y = (doc as any).lastAutoTable.finalY + 10;
 
-  // --- Desglose por juego ---
+  // Desglose por juego
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.text('Desglose por juego', margin, y);
@@ -112,7 +102,8 @@ export function exportClinicalPdf(data: ExportData) {
     `${Math.round(g.avgRiskScore * 100)}%`,
     g.avgAccuracy != null ? `${Math.round(g.avgAccuracy * 100)}%` : '---',
   ]);
-  (doc as any).autoTable({
+
+  autoTable(doc, {
     startY: y,
     head: [['Juego', 'Sesiones', 'Riesgo', 'Precisi\u00f3n']],
     body: gameRows,
@@ -124,7 +115,7 @@ export function exportClinicalPdf(data: ExportData) {
   });
   y = (doc as any).lastAutoTable.finalY + 10;
 
-  // --- Escala de riesgo ---
+  // Escala de riesgo
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.text('Escala de riesgo:', margin, y);
@@ -141,34 +132,29 @@ export function exportClinicalPdf(data: ExportData) {
   doc.text('Alerta (> 70%)', margin, y);
   y += 12;
 
-  // --- Nota legal ---
+  // Disclaimer
   doc.setDrawColor(200, 200, 200);
   doc.line(margin, y, pageW - margin, y);
   y += 8;
-
   doc.setTextColor(120, 120, 120);
   doc.setFontSize(8);
   doc.setFont('helvetica', 'italic');
-  const disclaimer = [
+  [
     'Este informe ha sido generado por EternaMente, una herramienta digital de apoyo a la evaluaci\u00f3n cognitiva.',
     'Los resultados mostrados son orientativos y no constituyen un diagn\u00f3stico m\u00e9dico.',
     'EternaMente es \u00fanicamente una aplicaci\u00f3n de apoyo y no reemplaza la evaluaci\u00f3n de un profesional de la salud.',
     'Se recomienda consultar con un especialista ante cualquier inquietud sobre los resultados.',
-  ];
-  disclaimer.forEach((line) => {
+  ].forEach((line) => {
     doc.text(line, margin, y);
     y += 4.5;
   });
 
-  // --- Footer ---
-  y = 285;
+  // Footer
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(160, 160, 160);
-  doc.text('EternaMente \u00b7 Plataforma de evaluaci\u00f3n cognitiva \u00b7 eternamente.app', pageW / 2, y, {
-    align: 'center',
-  });
-  doc.text(`P\u00e1gina 1 de 1`, pageW / 2, y + 4, { align: 'center' });
+  doc.text('EternaMente \u00b7 Plataforma de evaluaci\u00f3n cognitiva', pageW / 2, 285, { align: 'center' });
+  doc.text('P\u00e1gina 1 de 1', pageW / 2, 289, { align: 'center' });
 
   doc.save('reporte_cognitivo.pdf');
 }
