@@ -1,6 +1,6 @@
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const EMAIL_MAX = 254;
+const EMAIL_MAX = 30;
 const PASSWORD_MIN = 6;
 const PASSWORD_MAX = 128;
 const NAME_MIN = 2;

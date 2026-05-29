@@ -152,7 +152,7 @@ export function AuthPage() {
                 name="email"
                 type="email"
                 autoComplete="email"
-                maxLength={254}
+                maxLength={30}
                 className={`input ${fieldErrors.email ? 'input--error' : ''}`}
                 placeholder="tu@email.com"
                 disabled={loading}
@@ -186,7 +186,7 @@ export function AuthPage() {
                 name="regEmail"
                 type="email"
                 autoComplete="email"
-                maxLength={254}
+                maxLength={30}
                 className={`input ${fieldErrors.regEmail ? 'input--error' : ''}`}
                 placeholder="tu@email.com"
                 disabled={loading}
@@ -220,7 +220,7 @@ export function AuthPage() {
               {fieldErrors.regName && <span className="auth-page__field-error">{fieldErrors.regName}</span>}
             </label>
             <label>
-              Edad
+              Edad (desde los 60 años)
               <input
                 name="regAge"
                 type="number"
