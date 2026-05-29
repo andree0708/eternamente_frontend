@@ -349,18 +349,19 @@
 /* Memoria */
 .memory-game__difficulty {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   justify-content: center;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .memory-game__difficulty button {
-  padding: 10px 20px;
+  padding: 6px 12px;
   border: 2px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   background: #fff;
   cursor: pointer;
   font-weight: 500;
+  font-size: 13px;
   transition: all 0.2s;
 }
 
@@ -368,6 +369,13 @@
   border-color: #667eea;
   background: #667eea;
   color: #fff;
+}
+
+.memory-game__hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
 }
 
 .memory-game {
@@ -379,19 +387,19 @@
 
 .memory-game__board {
   display: grid;
-  gap: clamp(6px, 1.2vw, 10px);
-  width: min(100%, min(90vw, 560px));
+  gap: clamp(4px, 1vw, 8px);
+  width: 100%;
+  max-width: 520px;
   margin: 0 auto;
 }
 
 .memory-game__card {
-  aspect-ratio: 1;
   border: none;
-  border-radius: 14px;
+  border-radius: 10px;
   cursor: pointer;
-  perspective: 600px;
   background: transparent;
   padding: 0;
+  min-height: 0;
 }
 
 .memory-game__card-inner {
@@ -399,24 +407,30 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 100%;
-  min-height: 0;
-  font-size: clamp(18px, 3.5vw, 28px);
-  border-radius: 14px;
+  padding-bottom: 100%;
+  position: relative;
+  font-size: clamp(14px, 2.8vw, 22px);
+  border-radius: 10px;
   background: linear-gradient(145deg, #5a67d8, #7c3aed);
   color: #fff;
-  box-shadow: 0 6px 20px rgba(90, 103, 216, 0.35);
-  transition: transform 0.35s ease, background 0.35s;
+  box-shadow: 0 4px 12px rgba(90, 103, 216, 0.3);
+  transition: transform 0.25s ease, background 0.25s;
+}
+
+.memory-game__card-inner > * {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .memory-game__card:hover:not(:disabled) .memory-game__card-inner {
-  transform: translateY(-4px) scale(1.03);
+  transform: translateY(-2px) scale(1.03);
 }
 
 .memory-game__card.revealed .memory-game__card-inner,
 .memory-game__card.matched .memory-game__card-inner {
   background: linear-gradient(145deg, #fbbf24, #f59e0b);
-  transform: rotateY(0deg);
 }
 
 .memory-game__card.matched .memory-game__card-inner {
