@@ -430,7 +430,7 @@
   justify-content: center;
   width: 100%;
   aspect-ratio: 1;
-  font-size: clamp(10px, 2.2vw, 22px);
+  font-size: clamp(14px, 3vw, 28px);
   border-radius: 4px;
   background: linear-gradient(145deg, #5a67d8, #7c3aed);
   color: #fff;
@@ -473,6 +473,24 @@
 .stroop-game__progress span {
   font-size: 13px;
   color: var(--text-muted);
+}
+
+.stroop-game__progress {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.stroop-game__progress > span {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.stroop-game__live-score {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary, #2563eb);
 }
 
 .stroop-game__hint {
@@ -696,6 +714,16 @@
 
 .nav-game__cell.goal {
   background: linear-gradient(145deg, #34d399, #10b981);
+}
+
+.nav-game__cell.obstacle {
+  background: linear-gradient(145deg, #ef4444, #dc2626);
+  color: #fff;
+}
+
+.nav-game__cell .nav-game__obs {
+  font-size: 20px;
+  opacity: 0.85;
 }
 
 .nav-game--flash .nav-game__grid {

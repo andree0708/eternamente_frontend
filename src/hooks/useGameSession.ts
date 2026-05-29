@@ -31,8 +31,11 @@ export function useGameSession(gameType: GameType) {
         if (typeof v === 'number' && !Number.isFinite(v)) continue;
         clean[k] = v;
       }
+      const raw = localStorage.getItem('eternamente_user');
+      const userData = raw ? JSON.parse(raw) : {};
+      const age = userData.age || 65;
       const saved = await api<SavedAssessment>('/api/assessments', 'POST', {
-        age: 65,
+        age,
         metrics: clean,
       });
       setLastAssessmentId(saved.id);

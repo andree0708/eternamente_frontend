@@ -167,6 +167,7 @@ export function StroopGame({ onComplete, onStatsChange }: Props) {
           <div className="stroop-game__progress">
             <div className="stroop-game__progress-bar" style={{ width: `${(played / ROUNDS) * 100}%` }} />
             <span>Ronda {Math.min(played + 1, ROUNDS)} de {ROUNDS}</span>
+            <span className="stroop-game__live-score">Puntos: {calcScore('stroop', { correct, errors })}</span>
           </div>
 
           <p className="stroop-game__hint">

@@ -69,6 +69,8 @@ export function AuthPage() {
     const email = (form.elements.namedItem('regEmail') as HTMLInputElement).value.trim();
     const password = (form.elements.namedItem('regPassword') as HTMLInputElement).value;
     const fullName = (form.elements.namedItem('regName') as HTMLInputElement).value.trim();
+    const ageStr = (form.elements.namedItem('regAge') as HTMLInputElement).value;
+    const age = ageStr ? parseInt(ageStr, 10) : 0;
 
     const errors: Record<string, string> = {};
     const emailErr = validateEmail(email);
@@ -77,6 +79,7 @@ export function AuthPage() {
     if (emailErr) errors.regEmail = emailErr;
     if (passErr) errors.regPassword = passErr;
     if (nameErr) errors.regName = nameErr;
+    if (!age || age < 1 || age > 120) errors.regAge = 'Ingresa una edad válida (1-120)';
     if (Object.keys(errors).length) {
       setFieldErrors(errors);
       setMessage({ text: 'Revisa los campos marcados.', type: 'error' });
@@ -88,17 +91,17 @@ export function AuthPage() {
     setMessage(null);
     try {
       const passwordHash = await hashPasswordForTransport(password);
-      const result = await api<{ token: string; userId: string; email: string; fullName: string }>(
+      const result = await api<{ token: string; userId: string; email: string; fullName: string; age: number }>(
         '/api/users',
         'POST',
-        { email, password: passwordHash, fullName, role: 'PATIENT' },
+        { email, password: passwordHash, fullName, role: 'PATIENT', age },
         false
       );
       if (!result.token) throw new Error('No se recibió token de sesión');
       localStorage.setItem('eternamente_token', result.token);
       localStorage.setItem(
         'eternamente_user',
-        JSON.stringify({ id: result.userId, email: result.email, fullName: result.fullName })
+        JSON.stringify({ id: result.userId, email: result.email, fullName: result.fullName, age: result.age })
       );
       setMessage({ text: 'Cuenta creada. Redirigiendo…', type: 'success' });
       window.location.href = '/games';
@@ -210,6 +213,19 @@ export function AuthPage() {
                 disabled={loading}
               />
               {fieldErrors.regName && <span className="auth-page__field-error">{fieldErrors.regName}</span>}
+            </label>
+            <label>
+              Edad
+              <input
+                name="regAge"
+                type="number"
+                min={1}
+                max={120}
+                className={`input ${fieldErrors.regAge ? 'input--error' : ''}`}
+                placeholder="Ej: 65"
+                disabled={loading}
+              />
+              {fieldErrors.regAge && <span className="auth-page__field-error">{fieldErrors.regAge}</span>}
             </label>
             <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
               {loading ? 'Creando cuenta…' : 'Crear cuenta'}
