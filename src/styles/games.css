@@ -430,7 +430,7 @@
   justify-content: center;
   width: 100%;
   aspect-ratio: 1;
-  font-size: clamp(6px, 1.4vw, 11px);
+  font-size: clamp(10px, 2.2vw, 22px);
   border-radius: 4px;
   background: linear-gradient(145deg, #5a67d8, #7c3aed);
   color: #fff;
