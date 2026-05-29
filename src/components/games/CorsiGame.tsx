@@ -14,7 +14,7 @@ interface Props {
 export function CorsiGame({ onComplete, onStatsChange }: Props) {
   const meta = GAME_META.corsi;
   const { settings } = useGameConfig('corsi');
-  const gridSize = settings.gridSize;
+  const gridSize = settings.gridSize || 3;
   const cellCount = gridSize * gridSize;
   const [level, setLevel] = useState(1);
   const [sequence, setSequence] = useState<number[]>([]);
@@ -26,14 +26,19 @@ export function CorsiGame({ onComplete, onStatsChange }: Props) {
   const [finished, setFinished] = useState(false);
   const [started, setStarted] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
   const savedRef = useRef(false);
+  const playingRef = useRef(false);
 
   const seqLen = 2 + level;
   const maxLevel = settings.maxLevel;
 
   const playSequence = useCallback(
     async (seq: number[]) => {
+      if (playingRef.current) return;
+      playingRef.current = true;
       setPhase('watch');
+      setFeedbackMsg(null);
       for (const idx of seq) {
         setActiveCell(idx);
         await new Promise((r) => setTimeout(r, settings.flashMs));
@@ -41,6 +46,7 @@ export function CorsiGame({ onComplete, onStatsChange }: Props) {
         await new Promise((r) => setTimeout(r, settings.gapMs));
       }
       setPhase('repeat');
+      playingRef.current = false;
     },
     [settings.flashMs, settings.gapMs]
   );
@@ -66,21 +72,27 @@ export function CorsiGame({ onComplete, onStatsChange }: Props) {
   }, [level, correctCount, errors, onStatsChange]);
 
   const tapCell = (idx: number) => {
-    if (phase !== 'repeat') return;
+    if (phase !== 'repeat' || finished) return;
     const next = [...playerSeq, idx];
     setPlayerSeq(next);
     const expected = sequence[next.length - 1];
     if (idx !== expected) {
       setErrors((e) => e + 1);
-      setFinished(true);
+      setPhase('feedback');
+      setFeedbackMsg(`Secuencia incorrecta. Nivel alcanzado: ${Math.max(0, level - 1)}`);
+      setTimeout(() => setFinished(true), 1200);
       return;
     }
     if (next.length === sequence.length) {
       setCorrectCount((c) => c + 1);
+      setPhase('feedback');
+      setFeedbackMsg('✓ ¡Correcto!');
       if (level >= maxLevel) {
-        setFinished(true);
+        setTimeout(() => setFinished(true), 800);
       } else {
-        setLevel((l) => l + 1);
+        setTimeout(() => {
+          setLevel((l) => l + 1);
+        }, 800);
       }
     }
   };
@@ -99,6 +111,20 @@ export function CorsiGame({ onComplete, onStatsChange }: Props) {
     });
   }, [finished, correctCount, errors, level, maxLevel, onComplete]);
 
+  if (finished) {
+    return (
+      <div className="corsi-game">
+        <GameCompleteBanner
+          stats={[
+            { label: 'Nivel', value: String(errors > 0 ? Math.max(0, level - 1) : maxLevel) },
+            { label: 'Rondas OK', value: String(correctCount) },
+            { label: 'Errores', value: String(errors) },
+          ]}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="corsi-game">
       <GameInstructions
@@ -112,7 +138,12 @@ export function CorsiGame({ onComplete, onStatsChange }: Props) {
       />
       {started && (
         <>
-          <p className="corsi-game__level">Nivel {level} · {seqLen} casillas</p>
+          <p className="corsi-game__level">Nivel {level} de {maxLevel} · {seqLen} casillas</p>
+          {feedbackMsg && (
+            <p className={`game-feedback ${feedbackMsg.startsWith('✓') ? 'game-feedback--ok' : 'game-feedback--bad'}`} role="status">
+              {feedbackMsg}
+            </p>
+          )}
           <div
             className="corsi-game__grid"
             style={{ gridTemplateColumns: `repeat(${gridSize}, 1fr)` }}
@@ -123,14 +154,13 @@ export function CorsiGame({ onComplete, onStatsChange }: Props) {
                 type="button"
                 className={`corsi-game__cell ${activeCell === i ? 'active' : ''}`}
                 onClick={() => tapCell(i)}
-                disabled={phase === 'watch'}
+                disabled={phase === 'watch' || phase === 'feedback'}
               />
             ))}
           </div>
           <p className="corsi-game__phase">
-            {phase === 'watch' ? 'Observa la secuencia…' : 'Repite el patrón'}
+            {phase === 'watch' ? 'Observa la secuencia…' : phase === 'repeat' ? 'Repite el patrón' : '…'}
           </p>
-          {finished && <GameCompleteBanner />}
         </>
       )}
     </div>

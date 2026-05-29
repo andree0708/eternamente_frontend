@@ -24,6 +24,7 @@ export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
   const [started, setStarted] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [showIndex, setShowIndex] = useState(0);
+  const [feedbackOk, setFeedbackOk] = useState<boolean | null>(null);
   const savedRef = useRef(false);
 
   const length = settings.sequenceStart + level - 1;
@@ -38,6 +39,7 @@ export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
     setInput('');
     setShowIndex(0);
     setPhase('show');
+    setFeedbackOk(null);
   }, [length]);
 
   useEffect(() => {
@@ -62,22 +64,22 @@ export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
   const submitAnswer = () => {
     const expected = sequence.join('');
     const ok = input.trim() === expected;
+    setFeedbackOk(ok);
+    setPhase('feedback');
+
     if (ok) {
       setCorrectCount((c) => c + 1);
       if (level >= maxLevel) {
-        setFinished(true);
+        setTimeout(() => setFinished(true), 900);
       } else {
-        setLevel((l) => l + 1);
+        setTimeout(() => {
+          setLevel((l) => l + 1);
+        }, 900);
       }
     } else {
       setErrors((e) => e + 1);
-      setFinished(true);
+      setTimeout(() => setFinished(true), 1400);
     }
-    setPhase('feedback');
-    setTimeout(() => {
-      if (!ok) return;
-      setPhase('show');
-    }, 800);
   };
 
   useEffect(() => {
@@ -87,7 +89,7 @@ export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
     onComplete({
       gameType: 'digitspan',
       maxLevel,
-      achievedLevel: errors > 0 ? level - 1 : maxLevel,
+      achievedLevel: errors > 0 ? Math.max(0, level - 1) : maxLevel,
       correct: correctCount,
       errors,
       accuracy: Number((correctCount / Math.max(1, total)).toFixed(4)),
@@ -98,6 +100,21 @@ export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
     if (phase !== 'input' || input.length >= length) return;
     setInput((v) => v + d);
   };
+
+  if (finished) {
+    return (
+      <div className="digit-game">
+        <GameCompleteBanner
+          title={errors > 0 ? 'Partida terminada' : '¡Excelente memoria!'}
+          stats={[
+            { label: 'Nivel alcanzado', value: String(errors > 0 ? Math.max(0, level - 1) : maxLevel) },
+            { label: 'Aciertos', value: String(correctCount) },
+            { label: 'Errores', value: String(errors) },
+          ]}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="digit-game">
@@ -113,12 +130,15 @@ export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
       {started && (
         <>
           <p className="digit-game__level">Nivel {level} de {maxLevel}</p>
+          {errors > 0 && (
+            <p className="digit-game__errors" role="status">Errores acumulados: {errors}</p>
+          )}
           {phase === 'show' && (
             <div className="digit-game__display" aria-live="polite">
               {showIndex < sequence.length ? (
                 <span className="digit-game__digit">{sequence[showIndex]}</span>
               ) : (
-                <span className="digit-game__hint">Tu turno</span>
+                <span className="digit-game__hint">Tu turno — escribe la secuencia</span>
               )}
             </div>
           )}
@@ -140,7 +160,18 @@ export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
               </div>
             </>
           )}
-          {finished && <GameCompleteBanner />}
+          {phase === 'feedback' && feedbackOk !== null && (
+            <div
+              className={`game-feedback game-feedback--${feedbackOk ? 'ok' : 'bad'}`}
+              role="status"
+            >
+              {feedbackOk ? (
+                <p>✓ ¡Correcto! {level < maxLevel ? 'Siguiente nivel…' : 'Completaste todos los niveles.'}</p>
+              ) : (
+                <p>✗ Secuencia incorrecta. La correcta era: <strong>{sequence.join(' ')}</strong></p>
+              )}
+            </div>
+          )}
         </>
       )}
     </div>

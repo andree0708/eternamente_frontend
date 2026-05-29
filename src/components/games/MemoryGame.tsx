@@ -235,7 +235,12 @@ export function MemoryGame({ onComplete, onStatsChange }: Props) {
 
       <div
         className="memory-game__board"
-        style={{ gridTemplateColumns: `repeat(${config.cols}, minmax(56px, 1fr))` }}
+        style={{
+          gridTemplateColumns: `repeat(${config.cols}, 1fr)`,
+          gridTemplateRows: `repeat(${Math.ceil((config.pairs * 2) / config.cols)}, 1fr)`,
+          ['--memory-cols' as string]: config.cols,
+          ['--memory-rows' as string]: Math.ceil((config.pairs * 2) / config.cols),
+        }}
       >
         {cards.map((card, index) => (
           <button

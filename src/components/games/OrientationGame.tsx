@@ -72,47 +72,56 @@ interface Props {
 export function OrientationGame({ onComplete, onStatsChange }: Props) {
   const meta = GAME_META.orientation;
   const { settings } = useGameConfig('orientation');
+  const [started, setStarted] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
-
-  useEffect(() => {
-    if (!started) return;
-    setQuestions(buildQuestions().slice(0, settings.questionsPerSession || 5));
-    setIndex(0);
-    setCorrect(0);
-    setErrors(0);
-    setFinished(false);
-    savedRef.current = false;
-  }, [started, settings.questionsPerSession]);
   const [index, setIndex] = useState(0);
   const [correct, setCorrect] = useState(0);
   const [errors, setErrors] = useState(0);
   const [finished, setFinished] = useState(false);
-  const [started, setStarted] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false);
+  const [lastAnswer, setLastAnswer] = useState<'ok' | 'bad' | null>(null);
   const savedRef = useRef(false);
+
+  const count = settings.questionsPerSession || 5;
+
+  useEffect(() => {
+    if (!started) return;
+    setQuestions(buildQuestions().slice(0, count));
+    setIndex(0);
+    setCorrect(0);
+    setErrors(0);
+    setFinished(false);
+    setLastAnswer(null);
+    savedRef.current = false;
+  }, [started, count]);
 
   const q = questions[index];
 
   useEffect(() => {
-    onStatsChange?.([correct, errors, questions.length]);
-  }, [correct, errors, questions.length, onStatsChange]);
+    onStatsChange?.([correct, errors, questions.length || count]);
+  }, [correct, errors, questions.length, count, onStatsChange]);
 
   const answer = (option: string) => {
     if (finished || !q) return;
-    if (option === q.answer) {
+    const ok = option === q.answer;
+    setLastAnswer(ok ? 'ok' : 'bad');
+    if (ok) {
       setCorrect((c) => c + 1);
     } else {
       setErrors((e) => e + 1);
     }
     if (index + 1 >= questions.length) {
-      setFinished(true);
+      setTimeout(() => setFinished(true), 600);
     } else {
-      setIndex((i) => i + 1);
+      setTimeout(() => {
+        setIndex((i) => i + 1);
+        setLastAnswer(null);
+      }, 600);
     }
   };
 
   useEffect(() => {
-    if (!finished || savedRef.current) return;
+    if (!finished || savedRef.current || questions.length === 0) return;
     savedRef.current = true;
     onComplete({
       gameType: 'orientation',
@@ -122,6 +131,20 @@ export function OrientationGame({ onComplete, onStatsChange }: Props) {
       accuracy: Number((correct / questions.length).toFixed(4)),
     });
   }, [finished, correct, errors, questions.length, onComplete]);
+
+  if (finished) {
+    return (
+      <div className="orient-game">
+        <GameCompleteBanner
+          stats={[
+            { label: 'Aciertos', value: String(correct) },
+            { label: 'Errores', value: String(errors) },
+            { label: 'Preguntas', value: String(questions.length) },
+          ]}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="orient-game">
@@ -134,11 +157,19 @@ export function OrientationGame({ onComplete, onStatsChange }: Props) {
         helpOpen={helpOpen}
         onToggleHelp={() => setHelpOpen((o) => !o)}
       />
-      {started && q && !finished && (
+      {started && questions.length === 0 && (
+        <p className="game-loading" aria-live="polite">Preparando preguntas…</p>
+      )}
+      {started && q && (
         <>
           <p className="orient-game__progress">
             Pregunta {index + 1} de {questions.length}
           </p>
+          {lastAnswer && (
+            <p className={`game-feedback game-feedback--${lastAnswer}`} role="status">
+              {lastAnswer === 'ok' ? '✓ Correcto' : '✗ Incorrecto'}
+            </p>
+          )}
           <h2 className="orient-game__prompt">{q.prompt}</h2>
           <div className="orient-game__options">
             {q.options.map((opt) => (
@@ -149,7 +180,6 @@ export function OrientationGame({ onComplete, onStatsChange }: Props) {
           </div>
         </>
       )}
-      {finished && <GameCompleteBanner />}
     </div>
   );
 }

@@ -106,6 +106,25 @@ export function ArithmeticGame({ onComplete, onStatsChange }: Props) {
     });
   }, [finished, correct, errors, reactionTimes, settings.rounds, onComplete]);
 
+  if (finished) {
+    const avg = Math.round(
+      reactionTimes.length > 0
+        ? reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length
+        : 0
+    );
+    return (
+      <div className="arith-game">
+        <GameCompleteBanner
+          stats={[
+            { label: 'Aciertos', value: `${correct}/${settings.rounds}` },
+            { label: 'Errores', value: String(errors) },
+            { label: 'Tiempo medio', value: `${avg} ms` },
+          ]}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className={`arith-game ${flash ? `arith-game--${flash}` : ''}`}>
       <GameInstructions
@@ -117,7 +136,7 @@ export function ArithmeticGame({ onComplete, onStatsChange }: Props) {
         helpOpen={helpOpen}
         onToggleHelp={() => setHelpOpen((o) => !o)}
       />
-      {started && !finished && (
+      {started && (
         <>
           <p className="arith-game__meta">
             Pregunta {Math.min(round + 1, settings.rounds)} de {settings.rounds} · Tiempo: {timeLeft}s
@@ -132,7 +151,6 @@ export function ArithmeticGame({ onComplete, onStatsChange }: Props) {
           </div>
         </>
       )}
-      {finished && <GameCompleteBanner />}
     </div>
   );
 }

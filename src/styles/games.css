@@ -269,6 +269,45 @@
   font-weight: 500;
 }
 
+/* Feedback durante partida */
+.game-feedback,
+.game-loading {
+  text-align: center;
+  padding: 16px 20px;
+  margin: 12px 0;
+  border-radius: 12px;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.game-loading {
+  background: #f0f4f8;
+  color: var(--text-muted);
+}
+
+.game-feedback--ok {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.game-feedback--bad {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.digit-game__errors {
+  text-align: center;
+  color: var(--error);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.game-complete__hint {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
 /* Completado */
 .game-complete {
   text-align: center;
@@ -331,11 +370,20 @@
   color: #fff;
 }
 
+.memory-game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
 .memory-game__board {
   display: grid;
-  gap: 12px;
-  max-width: 480px;
+  gap: clamp(6px, 1.2vw, 10px);
+  width: min(100%, 520px);
+  max-height: min(52vh, 400px);
   margin: 0 auto;
+  aspect-ratio: var(--memory-cols, 4) / var(--memory-rows, 3);
 }
 
 .memory-game__card {
@@ -354,7 +402,8 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  font-size: clamp(24px, 5vw, 36px);
+  min-height: 0;
+  font-size: clamp(18px, 3.5vw, 28px);
   border-radius: 14px;
   background: linear-gradient(145deg, #5a67d8, #7c3aed);
   color: #fff;
