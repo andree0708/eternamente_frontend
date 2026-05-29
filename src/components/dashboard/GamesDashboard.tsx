@@ -73,6 +73,7 @@ export function GamesDashboard() {
   const riskPct = totalSessions > 0
     ? Math.round(((analytics?.byGameType.reduce((sum, g) => sum + g.avgRiskScore * g.sessions, 0) || 0) / totalSessions) * 100)
     : 0;
+  const maxSessions = Math.max(1, ...(analytics?.byGameType.map((g) => g.sessions) || [1]));
   const totalAcc = analytics?.summary.avgAccuracy != null ? Math.round(analytics.summary.avgAccuracy * 100) : null;
 
   function gameInfo(type: string): GameInfo | undefined {
