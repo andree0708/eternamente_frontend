@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { getGameCatalog } from '../../lib/games';
+import type { GameInfo } from '../../lib/games';
 import '../../styles/dashboard.css';
 
 interface Analytics {
@@ -17,6 +18,12 @@ interface Analytics {
     avgAccuracy: number | null;
   }>;
   riskTrend: Array<{ playedAt: string; riskScore: number; gameType: string }>;
+}
+
+function pctClass(v: number): string {
+  if (v <= 33) return 'dash__cell-pct--low';
+  if (v <= 66) return 'dash__cell-pct--mid';
+  return 'dash__cell-pct--high';
 }
 
 export function GamesDashboard() {
@@ -63,14 +70,14 @@ export function GamesDashboard() {
   const catalog = getGameCatalog();
   const totalFromGames = analytics?.byGameType.reduce((s, g) => s + g.sessions, 0) || 0;
   const totalSessions = Math.max(analytics?.summary.totalSessions || 0, totalFromGames);
-  const maxSessions = Math.max(1, ...(analytics?.byGameType.map((g) => g.sessions) || [1]));
   const riskPct = totalSessions > 0
     ? Math.round(((analytics?.byGameType.reduce((sum, g) => sum + g.avgRiskScore * g.sessions, 0) || 0) / totalSessions) * 100)
     : 0;
-  const accuracyPct =
-    analytics?.summary.avgAccuracy != null
-      ? Math.round(analytics.summary.avgAccuracy * 100)
-      : null;
+  const totalAcc = analytics?.summary.avgAccuracy != null ? Math.round(analytics.summary.avgAccuracy * 100) : null;
+
+  function gameInfo(type: string): GameInfo | undefined {
+    return catalog.find((g) => g.type === type);
+  }
 
   return (
     <div className="dash">
@@ -87,54 +94,67 @@ export function GamesDashboard() {
         </button>
       </header>
 
-      <section className="dash__analytics" aria-labelledby="analytics-title">
+      <section className="dash__section" aria-labelledby="analytics-title">
         <h2 id="analytics-title">Tu resumen</h2>
         {loading ? (
           <p className="dash__loading">Cargando analítica…</p>
         ) : analytics && totalSessions > 0 ? (
           <>
-            <div className="dash__stats">
-              <div className="dash__stat-card">
-                <span className="dash__stat-value">{totalSessions}</span>
-                <span className="dash__stat-label">Sesiones</span>
-              </div>
-              <div className="dash__stat-card">
-                <span className="dash__stat-value">{riskPct}%</span>
-                <span className="dash__stat-label">Índice de riesgo medio</span>
-              </div>
-              {accuracyPct != null && (
-                <div className="dash__stat-card">
-                  <span className="dash__stat-value">{accuracyPct}%</span>
-                  <span className="dash__stat-label">Precisión media</span>
-                </div>
-              )}
-            </div>
-
-            <h3 className="dash__chart-title">Sesiones por juego</h3>
-            <ul className="dash__bars">
-              {analytics.byGameType.map((row) => {
-                const info = catalog.find((g) => g.type === row.gameType);
-                const width = Math.round((row.sessions / maxSessions) * 100);
-                return (
-                  <li key={row.gameType}>
-                    <span className="dash__bar-label">
-                      {info?.icon} {info?.name || row.gameType}
-                    </span>
-                    <div className="dash__bar-track">
-                      <div
-                        className="dash__bar-fill"
-                        style={{ width: `${width}%`, background: info?.color || '#888' }}
-                      />
-                    </div>
-                    <span className="dash__bar-count">{row.sessions}</span>
-                  </li>
-                );
-              })}
-            </ul>
+            <table className="dash__table">
+              <thead>
+                <tr>
+                  <th>Juego</th>
+                  <th>Sesiones</th>
+                  <th>Riesgo medio</th>
+                  <th>Precisión</th>
+                </tr>
+              </thead>
+              <tbody>
+                {analytics.byGameType.map((row) => {
+                  const info = gameInfo(row.gameType);
+                  const rpct = Math.round(row.avgRiskScore * 100);
+                  const apct = row.avgAccuracy != null ? Math.round(row.avgAccuracy * 100) : null;
+                  return (
+                    <tr key={row.gameType} className="dash__table-row">
+                      <td>
+                        <div className="dash__game-cell">
+                          <span
+                            className="dash__game-badge"
+                            style={{ background: info?.color + '22', color: info?.color }}
+                          >
+                            {info?.icon || '?'}
+                          </span>
+                          <span className="dash__game-name">{info?.name || row.gameType}</span>
+                        </div>
+                      </td>
+                      <td><span className="dash__cell-num">{row.sessions}</span></td>
+                      <td><span className={`dash__cell-pct ${pctClass(rpct)}`}>{rpct}%</span></td>
+                      <td>
+                        {apct != null
+                          ? <span className={`dash__cell-pct ${pctClass(apct)}`}>{apct}%</span>
+                          : <span className="dash__cell-pct" style={{ color: 'var(--color-text-muted)' }}>—</span>
+                        }
+                      </td>
+                    </tr>
+                  );
+                })}
+                <tr className="dash__table-row dash__table-row--total">
+                  <td>Total</td>
+                  <td><span className="dash__cell-num">{totalSessions}</span></td>
+                  <td><span className={`dash__cell-pct ${pctClass(riskPct)}`}>{riskPct}%</span></td>
+                  <td>
+                    {totalAcc != null
+                      ? <span className={`dash__cell-pct ${pctClass(totalAcc)}`}>{totalAcc}%</span>
+                      : <span className="dash__cell-pct" style={{ color: 'var(--color-text-muted)' }}>—</span>
+                    }
+                  </td>
+                </tr>
+              </tbody>
+            </table>
 
             {analytics.riskTrend.length > 1 && (
-              <>
-                <h3 className="dash__chart-title">Últimas partidas (riesgo)</h3>
+              <div className="dash__trend-section">
+                <h3>Evolución de riesgo (últimas partidas)</h3>
                 <div className="dash__trend">
                   {analytics.riskTrend.map((point, i) => (
                     <div
@@ -145,7 +165,7 @@ export function GamesDashboard() {
                     />
                   ))}
                 </div>
-              </>
+              </div>
             )}
           </>
         ) : (
@@ -155,18 +175,27 @@ export function GamesDashboard() {
         )}
       </section>
 
-      <section id="juegos" className="dash__games" aria-labelledby="games-title">
+      <section id="juegos" className="dash__section" aria-labelledby="games-title">
         <h2 id="games-title">Juegos cognitivos</h2>
         <p className="dash__games-hint">8 evaluaciones · elige una para comenzar</p>
         <div className="dash__grid dash__grid--4x4">
           {catalog.map((game) => (
-            <a key={game.type} href={`/game?type=${game.type}`} className="dash__game-card">
-              <span className="dash__game-icon" style={{ background: game.color }}>
+            <a
+              key={game.type}
+              href={`/game?type=${game.type}`}
+              className="dash__game-card"
+              style={{ '--card-accent': game.color } as React.CSSProperties}
+            >
+              <span className="dash__game-icon" style={{ background: game.color + '22' }}>
                 {game.icon}
+                <span className="dash__game-icon-ring" />
               </span>
               <h3>{game.name}</h3>
               <p>{game.evaluates}</p>
-              <span className="dash__domain">{game.domain}</span>
+              <span className="dash__domain" style={{ background: game.color }}>
+                {game.domain}
+              </span>
+              <span className="dash__game-arrow">→</span>
             </a>
           ))}
         </div>
