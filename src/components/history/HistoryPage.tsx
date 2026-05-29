@@ -126,6 +126,12 @@ export function HistoryPage() {
           className="history-export-btn"
           onClick={() => {
             const catalog = getGameCatalog();
+            const totalAcc = assessments.length
+              ? assessments.reduce((s, a) => {
+                  const acc = a.metrics?.accuracy as number | undefined;
+                  return s + ((acc != null && acc <= 1) ? acc : 0);
+                }, 0) / assessments.length
+              : null;
             const gameRows = catalog.map((g) => {
               const sessions = assessments.filter(
                 (a) => (a.gameType || (a.metrics?.gameType as string)) === g.type
@@ -136,7 +142,7 @@ export function HistoryPage() {
               const avgAcc = sessions.length
                 ? sessions.reduce((s, a) => {
                     const acc = a.metrics?.accuracy as number | undefined;
-                    return s + (acc ?? 0);
+                    return s + ((acc != null && acc <= 1) ? acc : 0);
                   }, 0) / sessions.length
                 : null;
               return {
@@ -151,8 +157,10 @@ export function HistoryPage() {
               patientName: user?.fullName || user?.email || 'Paciente',
               summary: {
                 totalSessions: assessments.length,
-                avgRiskScore: summary?.avgRiskScore ?? 0,
-                avgAccuracy: summary?.avgAccuracy ?? null,
+                avgRiskScore: assessments.length
+                  ? assessments.reduce((s, a) => s + a.riskScore, 0) / assessments.length
+                  : 0,
+                avgAccuracy: totalAcc,
               },
               games: gameRows,
               trend: [],
