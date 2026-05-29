@@ -150,46 +150,39 @@ export function GamesDashboard() {
             )}
 
             <h3 className="dash__table-title">Desglose por juego</h3>
-            <table className="dash__table">
-              <thead>
-                <tr>
-                  <th>Juego</th>
-                  <th>Sesiones</th>
-                  <th>Riesgo medio</th>
-                  <th>Precisión</th>
-                </tr>
-              </thead>
-              <tbody>
-                {analytics.byGameType.map((row) => {
-                  const info = gameInfo(row.gameType);
-                  const rpct = Math.round(row.avgRiskScore * 100);
-                  const apct = row.avgAccuracy != null ? Math.round(row.avgAccuracy * 100) : null;
-                  return (
-                    <tr key={row.gameType} className="dash__table-row">
-                      <td>
-                        <div className="dash__game-cell">
-                          <span
-                            className="dash__game-badge"
-                            style={{ background: info?.color + '22', color: info?.color }}
-                          >
-                            {info?.icon || '?'}
-                          </span>
-                          <span className="dash__game-name">{info?.name || row.gameType}</span>
-                        </div>
-                      </td>
-                      <td><span className="dash__cell-num">{row.sessions}</span></td>
-                      <td><span className={`dash__cell-pct ${pctClass(rpct)}`}>{rpct}%</span></td>
-                      <td>
+            <div className="dash__bars">
+              {analytics.byGameType.map((row) => {
+                const info = gameInfo(row.gameType);
+                const rpct = Math.round(row.avgRiskScore * 100);
+                const apct = row.avgAccuracy != null ? Math.round(row.avgAccuracy * 100) : null;
+                const fillWidth = Math.round((row.sessions / maxSessions) * 100);
+                return (
+                  <div key={row.gameType} className="dash__bar-row">
+                    <div className="dash__bar-row-header">
+                      <span className="dash__bar-icon" style={{ background: info?.color + '22', color: info?.color }}>{info?.icon || '?'}</span>
+                      <span className="dash__bar-name">{info?.name || row.gameType}</span>
+                      <span className="dash__bar-sessions">{row.sessions} sesiones</span>
+                    </div>
+                    <div className="dash__bar-track">
+                      <div className="dash__bar-fill" style={{ width: `${fillWidth}%`, background: info?.color || '#888' }} />
+                    </div>
+                    <div className="dash__bar-stats">
+                      <span className="dash__bar-stat">
+                        <span className="dash__bar-stat-label">Riesgo</span>
+                        <span className={`dash__bar-stat-value ${pctClass(rpct)}`}>{rpct}%</span>
+                      </span>
+                      <span className="dash__bar-stat">
+                        <span className="dash__bar-stat-label">Precisión</span>
                         {apct != null
-                          ? <span className={`dash__cell-pct ${pctClass(apct)}`}>{apct}%</span>
-                          : <span className="dash__cell-pct" style={{ color: 'var(--color-text-muted)' }}>—</span>
+                          ? <span className={`dash__bar-stat-value ${pctClass(apct)}`}>{apct}%</span>
+                          : <span className="dash__bar-stat-value dash__cell-pct" style={{ color: 'var(--color-text-muted)' }}>—</span>
                         }
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </>
         ) : (
           <p className="dash__empty">
