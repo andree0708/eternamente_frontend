@@ -3,6 +3,7 @@ import { useGameConfig } from '../../hooks/useGameConfig';
 import { GameCompleteBanner } from './GameCompleteBanner';
 import { GameInstructions } from './GameInstructions';
 import { GAME_META } from '../../lib/gameConfig';
+import { calcScore } from '../../lib/scoring';
 
 interface Props {
   onComplete: (metrics: Record<string, unknown>) => void;
@@ -96,6 +97,7 @@ export function ArithmeticGame({ onComplete, onStatsChange }: Props) {
       reactionTimes.length > 0
         ? reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length
         : 0;
+    const score = calcScore('arithmetic', { correct, errors });
     onComplete({
       gameType: 'arithmetic',
       totalRounds: settings.rounds,
@@ -103,6 +105,7 @@ export function ArithmeticGame({ onComplete, onStatsChange }: Props) {
       errors,
       accuracy: Number((correct / settings.rounds).toFixed(4)),
       averageReactionTimeMs: Number(avg.toFixed(2)),
+      score,
     });
   }, [finished, correct, errors, reactionTimes, settings.rounds, onComplete]);
 

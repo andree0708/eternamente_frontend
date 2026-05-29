@@ -3,6 +3,7 @@ import { GameCompleteBanner } from './GameCompleteBanner';
 import { GameInstructions } from './GameInstructions';
 import { GAME_META } from '../../lib/gameConfig';
 import { useGameConfig } from '../../hooks/useGameConfig';
+import { calcScore } from '../../lib/scoring';
 
 const COLORS = [
   { name: 'rojo', hex: '#E53935', label: 'Rojo' },
@@ -92,6 +93,7 @@ export function StroopGame({ onComplete, onStatsChange }: Props) {
       reactionTimes.length > 0
         ? reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length
         : 0;
+    const score = calcScore('stroop', { correct, errors });
     onComplete({
       gameType: 'stroop',
       totalRounds: ROUNDS,
@@ -100,6 +102,7 @@ export function StroopGame({ onComplete, onStatsChange }: Props) {
       accuracy: Number((correct / ROUNDS).toFixed(4)),
       averageReactionTimeMs: Number(avg.toFixed(2)),
       timeLimitSeconds: TIME_LIMIT_SECONDS,
+      score,
     });
   }, [played, finished, correct, errors, reactionTimes, onComplete, clearTimer, TIME_LIMIT_SECONDS, ROUNDS]);
 

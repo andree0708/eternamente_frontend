@@ -3,6 +3,7 @@ import { useGameConfig } from '../../hooks/useGameConfig';
 import { GameCompleteBanner } from './GameCompleteBanner';
 import { GameInstructions } from './GameInstructions';
 import { GAME_META } from '../../lib/gameConfig';
+import { calcScore } from '../../lib/scoring';
 
 type Phase = 'show' | 'input' | 'feedback';
 
@@ -86,6 +87,7 @@ export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
     if (!finished || savedRef.current) return;
     savedRef.current = true;
     const total = correctCount + (errors > 0 ? 1 : 0);
+    const score = calcScore('digitspan', { correct: correctCount, errors });
     onComplete({
       gameType: 'digitspan',
       maxLevel,
@@ -93,6 +95,7 @@ export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
       correct: correctCount,
       errors,
       accuracy: Number((correctCount / Math.max(1, total)).toFixed(4)),
+      score,
     });
   }, [finished, correctCount, errors, level, maxLevel, onComplete]);
 
@@ -148,7 +151,14 @@ export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
           {phase === 'show' && (
             <div className="digit-game__display" aria-live="polite">
               {showIndex < sequence.length ? (
-                <span className="digit-game__digit">{sequence[showIndex]}</span>
+                <div className="digit-game__sequence">
+                  {sequence.slice(0, showIndex + 1).map((d, i) => (
+                    <span key={i} className="digit-game__digit">
+                      <span className="digit-game__pos">{i + 1}.</span>
+                      <span className="digit-game__val">{d}</span>
+                    </span>
+                  ))}
+                </div>
               ) : (
                 <span className="digit-game__hint">Tu turno — escribe la secuencia</span>
               )}

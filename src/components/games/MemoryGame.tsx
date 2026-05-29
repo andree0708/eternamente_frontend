@@ -3,6 +3,7 @@ import { GameCompleteBanner } from './GameCompleteBanner';
 import { GameInstructions } from './GameInstructions';
 import { GAME_META } from '../../lib/gameConfig';
 import { useGameConfig } from '../../hooks/useGameConfig';
+import { calcScore } from '../../lib/scoring';
 
 const SYMBOLS = ['★', '♥', '♦', '♣', '♠', '✿', '☀', '☁', '🌙', '🔔', '🍀', '⭐'];
 
@@ -120,7 +121,8 @@ export function MemoryGame({ onComplete, onStatsChange }: Props) {
             revealTimesRef.current.length > 0
               ? revealTimesRef.current.reduce((a, b) => a + b, 0) / revealTimesRef.current.length
               : 0;
-          queueMicrotask(() =>
+          queueMicrotask(() => {
+            const score = calcScore('memory', { matchedPairs: next, mismatches, difficulty });
             onComplete({
               gameType: 'memory',
               difficulty,
@@ -132,8 +134,9 @@ export function MemoryGame({ onComplete, onStatsChange }: Props) {
               averageRevealMs: Number(avg.toFixed(2)),
               accuracy: Number((next / config.pairs).toFixed(4)),
               reactionTimeMs: Number(avg.toFixed(2)),
-            })
-          );
+              score,
+            });
+          });
         }
         return next;
       });

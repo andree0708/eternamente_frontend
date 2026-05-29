@@ -3,6 +3,7 @@ import { GameCompleteBanner } from './GameCompleteBanner';
 import { GameInstructions } from './GameInstructions';
 import { GAME_META } from '../../lib/gameConfig';
 import { useGameConfig } from '../../hooks/useGameConfig';
+import { calcScore } from '../../lib/scoring';
 
 type CellState = 'idle' | 'target' | 'distractor' | 'hit' | 'miss';
 
@@ -41,6 +42,7 @@ export function WhackGame({ onComplete, onStatsChange }: Props) {
       reactionTimes.length > 0
         ? reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length
         : 0;
+    const score = calcScore('whackamole', { hits: correct, errors, misses: falsePositives });
     onComplete({
       gameType: 'whackamole',
       totalRounds: ROUNDS,
@@ -49,6 +51,7 @@ export function WhackGame({ onComplete, onStatsChange }: Props) {
       falsePositives,
       accuracy: Number((correct / ROUNDS).toFixed(4)),
       averageReactionTimeMs: Number(avg.toFixed(2)),
+      score,
     });
   }, [played, finished, correct, errors, falsePositives, reactionTimes, onComplete]);
 

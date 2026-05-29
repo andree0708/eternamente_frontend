@@ -3,6 +3,7 @@ import { useGameConfig } from '../../hooks/useGameConfig';
 import { GameCompleteBanner } from './GameCompleteBanner';
 import { GameInstructions } from './GameInstructions';
 import { GAME_META } from '../../lib/gameConfig';
+import { calcScore } from '../../lib/scoring';
 
 type Phase = 'watch' | 'repeat' | 'feedback';
 
@@ -101,6 +102,7 @@ export function CorsiGame({ onComplete, onStatsChange }: Props) {
     if (!finished || savedRef.current) return;
     savedRef.current = true;
     const total = correctCount + (errors > 0 ? 1 : 0);
+    const score = calcScore('corsi', { correct: correctCount, errors });
     onComplete({
       gameType: 'corsi',
       maxLevel,
@@ -108,6 +110,7 @@ export function CorsiGame({ onComplete, onStatsChange }: Props) {
       correct: correctCount,
       errors,
       accuracy: Number((correctCount / Math.max(1, total)).toFixed(4)),
+      score,
     });
   }, [finished, correctCount, errors, level, maxLevel, onComplete]);
 

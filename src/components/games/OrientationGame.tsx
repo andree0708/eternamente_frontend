@@ -3,6 +3,7 @@ import { useGameConfig } from '../../hooks/useGameConfig';
 import { GameCompleteBanner } from './GameCompleteBanner';
 import { GameInstructions } from './GameInstructions';
 import { GAME_META } from '../../lib/gameConfig';
+import { calcScore } from '../../lib/scoring';
 
 interface Question {
   id: string;
@@ -159,12 +160,14 @@ export function OrientationGame({ onComplete, onStatsChange }: Props) {
   useEffect(() => {
     if (!finished || savedRef.current || questions.length === 0) return;
     savedRef.current = true;
+    const score = calcScore('orientation', { correct, errors });
     onComplete({
       gameType: 'orientation',
       correct,
       errors,
       totalQuestions: questions.length,
       accuracy: Number((correct / questions.length).toFixed(4)),
+      score,
     });
   }, [finished, correct, errors, questions.length, onComplete]);
 

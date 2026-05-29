@@ -3,6 +3,7 @@ import { GameCompleteBanner } from './GameCompleteBanner';
 import { GameInstructions } from './GameInstructions';
 import { GAME_META } from '../../lib/gameConfig';
 import { useGameConfig } from '../../hooks/useGameConfig';
+import { calcScore } from '../../lib/scoring';
 
 interface Props {
   onComplete: (metrics: Record<string, unknown>) => void;
@@ -75,12 +76,15 @@ export function NavigationGame({ onComplete, onStatsChange }: Props) {
   useEffect(() => {
     if (!finished || savedRef.current) return;
     savedRef.current = true;
+    const correctMoves = Math.max(0, moves - errors);
+    const score = calcScore('navigation', { correct: correctMoves, errors });
     onComplete({
       gameType: 'navigation',
       maxLevel: MAX_LEVEL,
       achievedLevel: MAX_LEVEL,
       totalMoves: moves,
       errors,
+      score,
     });
   }, [finished, moves, errors, onComplete]);
 
