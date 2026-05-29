@@ -94,12 +94,62 @@ export function GamesDashboard() {
         </button>
       </header>
 
-      <section className="dash__section" aria-labelledby="analytics-title">
-        <h2 id="analytics-title">Tu resumen</h2>
+      <section className="dash__section" aria-labelledby="metrics-title">
+        <h2 id="metrics-title">Resumen de métricas</h2>
         {loading ? (
           <p className="dash__loading">Cargando analítica…</p>
         ) : analytics && totalSessions > 0 ? (
           <>
+            <div className="dash__metrics-vertical">
+              <div className="dash__metric-card">
+                <span className="dash__metric-icon">📊</span>
+                <div>
+                  <span className="dash__metric-value">{totalSessions}</span>
+                  <span className="dash__metric-label">Sesiones totales</span>
+                </div>
+              </div>
+              <div className="dash__metric-card">
+                <span className="dash__metric-icon">⚠️</span>
+                <div>
+                  <span className={`dash__metric-value ${pctClass(riskPct)}`}>{riskPct}%</span>
+                  <span className="dash__metric-label">Riesgo promedio</span>
+                </div>
+              </div>
+              <div className="dash__metric-card">
+                <span className="dash__metric-icon">🎯</span>
+                <div>
+                  {totalAcc != null ? (
+                    <>
+                      <span className={`dash__metric-value ${pctClass(totalAcc)}`}>{totalAcc}%</span>
+                      <span className="dash__metric-label">Precisión promedio</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="dash__metric-value" style={{ color: 'var(--color-text-muted)' }}>—</span>
+                      <span className="dash__metric-label">Precisión promedio</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {analytics.riskTrend.length > 1 && (
+              <div className="dash__trend-section">
+                <h3>Evolución de riesgo</h3>
+                <div className="dash__trend">
+                  {analytics.riskTrend.map((point, i) => (
+                    <div
+                      key={`${point.playedAt}-${i}`}
+                      className="dash__trend-bar"
+                      style={{ height: `${Math.max(8, point.riskScore * 100)}%` }}
+                      title={`${Math.round(point.riskScore * 100)}%`}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <h3 className="dash__table-title">Desglose por juego</h3>
             <table className="dash__table">
               <thead>
                 <tr>
@@ -138,35 +188,8 @@ export function GamesDashboard() {
                     </tr>
                   );
                 })}
-                <tr className="dash__table-row dash__table-row--total">
-                  <td>Total</td>
-                  <td><span className="dash__cell-num">{totalSessions}</span></td>
-                  <td><span className={`dash__cell-pct ${pctClass(riskPct)}`}>{riskPct}%</span></td>
-                  <td>
-                    {totalAcc != null
-                      ? <span className={`dash__cell-pct ${pctClass(totalAcc)}`}>{totalAcc}%</span>
-                      : <span className="dash__cell-pct" style={{ color: 'var(--color-text-muted)' }}>—</span>
-                    }
-                  </td>
-                </tr>
               </tbody>
             </table>
-
-            {analytics.riskTrend.length > 1 && (
-              <div className="dash__trend-section">
-                <h3>Evolución de riesgo (últimas partidas)</h3>
-                <div className="dash__trend">
-                  {analytics.riskTrend.map((point, i) => (
-                    <div
-                      key={`${point.playedAt}-${i}`}
-                      className="dash__trend-bar"
-                      style={{ height: `${Math.max(8, point.riskScore * 100)}%` }}
-                      title={`${Math.round(point.riskScore * 100)}%`}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
           </>
         ) : (
           <p className="dash__empty">
