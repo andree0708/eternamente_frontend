@@ -11,6 +11,15 @@ interface Question {
   answer: string;
 }
 
+function shuffle<T>(arr: T[]): T[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
 function buildQuestions(): Question[] {
   const now = new Date();
   const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -27,8 +36,6 @@ function buildQuestions(): Question[] {
   const hour = now.getHours();
   const timeOfDay = hour < 12 ? 'mañana' : hour < 18 ? 'tarde' : 'noche';
   const monthDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-
-  const shuffle = <T,>(arr: T[]) => [...arr].sort(() => Math.random() - 0.5);
 
   const all: Question[] = [
     {
@@ -57,13 +64,14 @@ function buildQuestions(): Question[] {
     },
     {
       id: 'date',
-      prompt: `¿Cuál es la fecha de hoy? (${dayNum} de ${month})`,
+      prompt: '¿Cuál es la fecha completa de hoy? (ej: lunes, 29 de mayo de 2026)',
       options: shuffle([
-        `${dayNum} de ${month}`,
-        `${Math.min(monthDays, dayNum + 1)} de ${month}`,
-        `${Math.max(1, dayNum - 1)} de ${month}`,
+        `${dayName}, ${dayNum} de ${month} de ${year}`,
+        `${dayName}, ${dayNum + 1} de ${month} de ${year}`,
+        `${days[(now.getDay() + 1) % 7]}, ${dayNum} de ${month} de ${year}`,
+        `${dayName}, ${Math.max(1, dayNum - 1)} de ${month} de ${year}`,
       ]),
-      answer: `${dayNum} de ${month}`,
+      answer: `${dayName}, ${dayNum} de ${month} de ${year}`,
     },
     {
       id: 'daynum',
