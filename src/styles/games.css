@@ -387,15 +387,15 @@
 
 .memory-game__board {
   display: grid;
-  gap: clamp(2px, 0.6vw, 6px);
+  gap: clamp(2px, 0.5vw, 5px);
   width: 100%;
-  max-width: 480px;
+  max-width: 800px;
   margin: 0 auto;
 }
 
 .memory-game__card {
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   background: transparent;
   padding: 0;
@@ -406,25 +406,19 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding-bottom: 75%;
-  position: relative;
-  font-size: clamp(12px, 2.2vw, 20px);
-  border-radius: 8px;
+  aspect-ratio: 1;
+  font-size: clamp(10px, 2vw, 18px);
+  border-radius: 6px;
   background: linear-gradient(145deg, #5a67d8, #7c3aed);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(90, 103, 216, 0.25);
-  transition: transform 0.2s ease, background 0.2s;
+  box-shadow: 0 1px 4px rgba(90, 103, 216, 0.25);
+  transition: transform 0.15s ease, background 0.15s;
 }
 
-.memory-game__card-inner > * {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
+.memory-game__card-inner > * { }
 
 .memory-game__card:hover:not(:disabled) .memory-game__card-inner {
-  transform: translateY(-1px) scale(1.02);
+  transform: scale(1.05);
 }
 
 .memory-game__card.revealed .memory-game__card-inner,

@@ -17,7 +17,7 @@ export interface GameInfo {
 }
 
 export const DEFAULT_GAME_SETTINGS: Record<GameType, Record<string, number>> = {
-  memory: { pairsEasy: 6, pairsMedium: 8, pairsHard: 10, colsEasy: 3, colsMedium: 4, colsHard: 4 },
+  memory: { pairsEasy: 6, pairsMedium: 8, pairsHard: 10, colsEasy: 6, colsMedium: 8, colsHard: 10 },
   stroop: { rounds: 20, timeLimitSeconds: 5 },
   navigation: { maxLevel: 5, gridSize: 5 },
   whackamole: { rounds: 30, gridSize: 3, showMs: 1400, distractorChance: 0.35 },
