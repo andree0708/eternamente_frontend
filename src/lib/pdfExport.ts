@@ -9,7 +9,6 @@ interface ExportSummary {
 interface ExportGameRow {
   gameType: string;
   name: string;
-  icon: string;
   sessions: number;
   avgRiskScore: number;
   avgAccuracy: number | null;
@@ -123,7 +122,7 @@ export function exportClinicalPdf(data: ExportData) {
     y += 8;
 
     const gameRows = data.games.map((g) => [
-      `${g.icon} ${g.name}`,
+      g.name,
       String(g.sessions),
       `${Math.round(g.avgRiskScore * 100)}%`,
       g.avgAccuracy != null ? `${Math.round(g.avgAccuracy * 100)}%` : '---',

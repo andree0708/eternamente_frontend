@@ -142,7 +142,6 @@ export function HistoryPage() {
               return {
                 gameType: g.type,
                 name: g.name,
-                icon: g.icon,
                 sessions: sessions.length,
                 avgRiskScore: avgRisk,
                 avgAccuracy: avgAcc != null ? avgAcc : null,
