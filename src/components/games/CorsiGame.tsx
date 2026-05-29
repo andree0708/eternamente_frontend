@@ -115,6 +115,7 @@ export function CorsiGame({ onComplete, onStatsChange }: Props) {
   }, [finished, correctCount, errors, level, maxLevel, onComplete]);
 
   if (finished) {
+    const score = calcScore('corsi', { correct: correctCount, errors });
     return (
       <div className="corsi-game">
         <GameCompleteBanner
@@ -122,6 +123,7 @@ export function CorsiGame({ onComplete, onStatsChange }: Props) {
             { label: 'Nivel', value: String(errors > 0 ? Math.max(0, level - 1) : maxLevel) },
             { label: 'Rondas OK', value: String(correctCount) },
             { label: 'Errores', value: String(errors) },
+            { label: 'Puntuación', value: String(score) },
           ]}
         />
       </div>

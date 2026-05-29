@@ -172,6 +172,7 @@ export function OrientationGame({ onComplete, onStatsChange }: Props) {
   }, [finished, correct, errors, questions.length, onComplete]);
 
   if (finished) {
+    const score = calcScore('orientation', { correct, errors });
     return (
       <div className="orient-game">
         <GameCompleteBanner
@@ -179,6 +180,7 @@ export function OrientationGame({ onComplete, onStatsChange }: Props) {
             { label: 'Aciertos', value: String(correct) },
             { label: 'Errores', value: String(errors) },
             { label: 'Preguntas', value: String(questions.length) },
+            { label: 'Puntuación', value: String(score) },
           ]}
         />
       </div>

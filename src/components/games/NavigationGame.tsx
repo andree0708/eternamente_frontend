@@ -106,12 +106,15 @@ export function NavigationGame({ onComplete, onStatsChange }: Props) {
   });
 
   if (finished) {
+    const correctMoves = Math.max(0, moves - errors);
+    const score = calcScore('navigation', { correct: correctMoves, errors });
     return (
       <GameCompleteBanner
         stats={[
           { label: 'Niveles', value: `${MAX_LEVEL}/${MAX_LEVEL}` },
           { label: 'Movimientos', value: String(moves) },
           { label: 'Errores', value: String(errors) },
+          { label: 'Puntuación', value: String(score) },
         ]}
         onBack={() => { window.location.href = '/games'; }}
       />

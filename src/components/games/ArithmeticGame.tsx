@@ -115,6 +115,7 @@ export function ArithmeticGame({ onComplete, onStatsChange }: Props) {
         ? reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length
         : 0
     );
+    const score = calcScore('arithmetic', { correct, errors });
     return (
       <div className="arith-game">
         <GameCompleteBanner
@@ -122,6 +123,7 @@ export function ArithmeticGame({ onComplete, onStatsChange }: Props) {
             { label: 'Aciertos', value: `${correct}/${settings.rounds}` },
             { label: 'Errores', value: String(errors) },
             { label: 'Tiempo medio', value: `${avg} ms` },
+            { label: 'Puntuación', value: String(score) },
           ]}
         />
       </div>

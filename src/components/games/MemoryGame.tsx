@@ -191,6 +191,7 @@ export function MemoryGame({ onComplete, onStatsChange }: Props) {
   };
 
   if (finished) {
+    const score = calcScore('memory', { matchedPairs, mismatches, difficulty });
     return (
       <GameCompleteBanner
         stats={[
@@ -198,6 +199,7 @@ export function MemoryGame({ onComplete, onStatsChange }: Props) {
           { label: 'Errores', value: String(mismatches) },
           { label: 'Pares', value: `${matchedPairs}/${config.pairs}` },
           { label: 'Dificultad', value: config.label },
+          { label: 'Puntuación', value: String(score) },
         ]}
         onBack={() => { window.location.href = '/games'; }}
       />

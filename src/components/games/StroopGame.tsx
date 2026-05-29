@@ -134,16 +134,16 @@ export function StroopGame({ onComplete, onStatsChange }: Props) {
   };
 
   if (finished) {
-    const avg = Math.round(
-      reactionTimes.reduce((a, b) => a + b, 0) / (reactionTimes.length || 1)
-    );
+    const score = calcScore('stroop', { correct, errors });
     return (
-      <GameCompleteBanner
-        stats={[
-          { label: 'Aciertos', value: `${correct}/${ROUNDS}` },
-          { label: 'Errores', value: String(errors) },
-          { label: 'Tiempo medio', value: `${avg} ms` },
-        ]}
+      <div className={`stroop-game ${flash ? `stroop-game--${flash}` : ''}`}>
+        <GameCompleteBanner
+          stats={[
+            { label: 'Aciertos', value: `${correct}/${ROUNDS}` },
+            { label: 'Errores', value: String(errors) },
+            { label: 'Tiempo medio', value: `${avg} ms` },
+            { label: 'Puntuación', value: String(score) },
+          ]}
         onBack={() => { window.location.href = '/games'; }}
       />
     );

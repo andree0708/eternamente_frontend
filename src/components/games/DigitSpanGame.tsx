@@ -117,6 +117,7 @@ export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
   };
 
   if (finished) {
+    const score = calcScore('digitspan', { correct: correctCount, errors });
     return (
       <div className="digit-game">
         <GameCompleteBanner
@@ -125,6 +126,7 @@ export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
             { label: 'Nivel alcanzado', value: String(errors > 0 ? Math.max(0, level - 1) : maxLevel) },
             { label: 'Aciertos', value: String(correctCount) },
             { label: 'Errores', value: String(errors) },
+            { label: 'Puntuación', value: String(score) },
           ]}
         />
       </div>
