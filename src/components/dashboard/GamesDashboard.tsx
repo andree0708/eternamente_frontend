@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { getGameCatalog } from '../../lib/games';
 import type { GameInfo } from '../../lib/games';
+import { exportClinicalPdf } from '../../lib/pdfExport';
 import '../../styles/dashboard.css';
 
 interface Analytics {
@@ -92,6 +93,36 @@ export function GamesDashboard() {
         </div>
         <button type="button" className="dash__logout" onClick={logout}>
           Cerrar sesión
+        </button>
+        <button
+          type="button"
+          className="dash__export-btn"
+          onClick={() => {
+            if (!analytics) return;
+            const catalog = getGameCatalog();
+            exportClinicalPdf({
+              patientName: user?.fullName || user?.email || 'Paciente',
+              summary: {
+                totalSessions,
+                avgRiskScore: riskPct / 100,
+                avgAccuracy: analytics.summary.avgAccuracy,
+              },
+              games: analytics.byGameType.map((g) => {
+                const info = catalog.find((c) => c.type === g.gameType);
+                return {
+                  gameType: g.gameType,
+                  name: info?.name || g.gameType,
+                  icon: info?.icon || '?',
+                  sessions: g.sessions,
+                  avgRiskScore: g.avgRiskScore,
+                  avgAccuracy: g.avgAccuracy,
+                };
+              }),
+              trend: analytics.riskTrend,
+            });
+          }}
+        >
+          Exportar PDF
         </button>
       </header>
 
