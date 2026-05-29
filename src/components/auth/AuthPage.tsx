@@ -79,7 +79,7 @@ export function AuthPage() {
     if (emailErr) errors.regEmail = emailErr;
     if (passErr) errors.regPassword = passErr;
     if (nameErr) errors.regName = nameErr;
-    if (!age || age < 1 || age > 120) errors.regAge = 'Ingresa una edad válida (1-120)';
+    if (!age || age < 60 || age > 120) errors.regAge = 'Debes tener 60 años o más';
     if (Object.keys(errors).length) {
       setFieldErrors(errors);
       setMessage({ text: 'Revisa los campos marcados.', type: 'error' });
@@ -219,7 +219,7 @@ export function AuthPage() {
               <input
                 name="regAge"
                 type="number"
-                min={1}
+                min={60}
                 max={120}
                 className={`input ${fieldErrors.regAge ? 'input--error' : ''}`}
                 placeholder="Ej: 65"

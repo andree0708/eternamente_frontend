@@ -33,7 +33,7 @@ export function useGameSession(gameType: GameType) {
       }
       const raw = localStorage.getItem('eternamente_user');
       const userData = raw ? JSON.parse(raw) : {};
-      const age = userData.age || 65;
+      const age = userData.age || 60;
       const saved = await api<SavedAssessment>('/api/assessments', 'POST', {
         age,
         metrics: clean,
