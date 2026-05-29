@@ -40,7 +40,7 @@ export function useGameSession(gameType: GameType) {
       return saved.id;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al guardar';
-      setSaveMessage({ text: message, type: 'error' });
+      setSaveMessage({ text: `Error al guardar: ${message}`, type: 'error' });
       return null;
     } finally {
       setSaving(false);

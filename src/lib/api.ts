@@ -1,8 +1,5 @@
-/**
- * URL base del API.
- * - Local: PUBLIC_API_URL=http://localhost:8080 en .env
- * - Vercel: dejar vacío para usar el proxy de vercel.json (mismo origen, sin CORS)
- */
+const RENDER_BACKEND_URL = 'https://eternamente.onrender.com';
+
 export function getApiBaseUrl(): string {
   const configured = (import.meta.env.PUBLIC_API_URL as string | undefined)?.trim();
 
@@ -16,10 +13,10 @@ export function getApiBaseUrl(): string {
     }
 
     if (!isLocal) {
-      if (!configured || configured === '/' || configured === 'PROXY') {
-        return '';
+      if (configured && configured !== '/' && configured !== 'PROXY') {
+        return configured.replace(/\/+$/, '');
       }
-      return configured.replace(/\/+$/, '');
+      return RENDER_BACKEND_URL;
     }
   }
 
@@ -89,12 +86,19 @@ export async function api<T = Record<string, unknown>>(
 
   let resp: Response;
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
     resp = await fetch(url, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
   } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error(`La solicitud a ${url} excedió el tiempo de espera (15s).`);
+    }
     throw new Error(networkErrorMessage(url, err));
   }
 

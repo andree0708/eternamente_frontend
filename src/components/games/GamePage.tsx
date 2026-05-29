@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { GAME_META, parseGameType } from '../../lib/gameConfig';
 import { useGameSession } from '../../hooks/useGameSession';
+import { GameErrorBoundary } from './GameErrorBoundary';
 import { GameStatsBar } from './GameStatsBar';
 import { MemoryGame } from './MemoryGame';
 import { NavigationGame } from './NavigationGame';
@@ -123,7 +124,11 @@ export function GamePage() {
             </div>
           )}
 
-          <div className="game-app__board">{gameElement}</div>
+          <div className="game-app__board">
+            <GameErrorBoundary gameType={gameType}>
+              {gameElement}
+            </GameErrorBoundary>
+          </div>
 
           {session.gameCompleted && (
             <div className="game-app__actions">

@@ -380,10 +380,8 @@
 .memory-game__board {
   display: grid;
   gap: clamp(6px, 1.2vw, 10px);
-  width: min(100%, 520px);
-  max-height: min(52vh, 400px);
+  width: min(100%, min(90vw, 560px));
   margin: 0 auto;
-  aspect-ratio: var(--memory-cols, 4) / var(--memory-rows, 3);
 }
 
 .memory-game__card {
