@@ -1,8 +1,8 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { GamesDashboard } from '../components/dashboard/GamesDashboard';
+import { DashboardApp } from '../components/dashboard/DashboardApp';
 ---
 
 <Layout title="EternaMente - Panel">
-	<GamesDashboard client:only="react" />
+	<DashboardApp client:only="react" />
 </Layout>

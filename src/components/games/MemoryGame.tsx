@@ -59,7 +59,8 @@ export function MemoryGame({ onComplete, onStatsChange }: Props) {
   const [mismatches, setMismatches] = useState(0);
   const [matchedPairs, setMatchedPairs] = useState(0);
   const [finished, setFinished] = useState(false);
-  const [instructionsOpen, setInstructionsOpen] = useState(true);
+  const [started, setStarted] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const startAtRef = useRef(performance.now());
   const revealTimesRef = useRef<number[]>([]);
@@ -206,10 +207,14 @@ export function MemoryGame({ onComplete, onStatsChange }: Props) {
         title={meta.instructions.title}
         steps={meta.instructions.steps}
         accent={meta.accent}
-        collapsed={!instructionsOpen}
-        onToggle={() => setInstructionsOpen((o) => !o)}
+        started={started}
+        onStart={() => setStarted(true)}
+        helpOpen={helpOpen}
+        onToggleHelp={() => setHelpOpen((o) => !o)}
       />
 
+      {started && (
+        <>
       <div className="memory-game__difficulty">
         {(Object.keys(DIFFICULTY_CONFIG) as Difficulty[]).map((d) => (
           <button
@@ -247,6 +252,8 @@ export function MemoryGame({ onComplete, onStatsChange }: Props) {
           </button>
         ))}
       </div>
+        </>
+      )}
     </div>
   );
 }

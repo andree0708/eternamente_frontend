@@ -24,7 +24,8 @@ export function WhackGame({ onComplete, onStatsChange }: Props) {
   const [falsePositives, setFalsePositives] = useState(0);
   const [reactionTimes, setReactionTimes] = useState<number[]>([]);
   const [finished, setFinished] = useState(false);
-  const [instructionsOpen, setInstructionsOpen] = useState(true);
+  const [started, setStarted] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const targetRef = useRef<number | null>(null);
   const startRef = useRef(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
@@ -78,12 +79,13 @@ export function WhackGame({ onComplete, onStatsChange }: Props) {
   }, [played]);
 
   useEffect(() => {
-    const t = setTimeout(nextRound, 1200);
+    if (!started || finished) return;
+    const t = setTimeout(nextRound, 800);
     return () => {
       clearTimeout(t);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, []);
+  }, [started]);
 
   useEffect(() => {
     const avg =
@@ -140,10 +142,14 @@ export function WhackGame({ onComplete, onStatsChange }: Props) {
         steps={meta.instructions.steps}
         warning={meta.instructions.warning}
         accent={meta.accent}
-        collapsed={!instructionsOpen}
-        onToggle={() => setInstructionsOpen((o) => !o)}
+        started={started}
+        onStart={() => setStarted(true)}
+        helpOpen={helpOpen}
+        onToggleHelp={() => setHelpOpen((o) => !o)}
       />
 
+      {started && (
+        <>
       <div className="whack-game__progress">
         <span>✅ {correct}</span>
         <span>❌ {errors}</span>
@@ -166,6 +172,8 @@ export function WhackGame({ onComplete, onStatsChange }: Props) {
           </button>
         ))}
       </div>
+        </>
+      )}
     </div>
   );
 }

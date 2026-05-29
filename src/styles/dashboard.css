@@ -1,39 +1,28 @@
 .dash {
-  min-height: 100vh;
-  background: linear-gradient(160deg, #f7f9fc 0%, #e8eef4 100%);
+  width: 100%;
 }
 
-.dash__header {
+.dash__welcome {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
-  padding: 20px 28px;
-  background: #fff;
-  box-shadow: var(--shadow-sm);
   flex-wrap: wrap;
+  margin-bottom: 8px;
 }
 
-.dash__user {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.dash__avatar {
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.dash__user strong {
-  display: block;
-  font-size: 1.25rem;
-  color: var(--primary);
+.dash__welcome h1 {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  color: var(--color-primary, var(--primary));
+  margin-bottom: 8px;
 }
 
 .dash__subtitle {
-  font-size: 1rem;
-  color: var(--text-muted);
+  font-size: 1.0625rem;
+  color: var(--color-text-muted, var(--text-muted));
+  max-width: 640px;
+  line-height: 1.6;
 }
 
 .dash__logout {
@@ -176,10 +165,33 @@
   border-radius: var(--radius-md);
 }
 
+.dash__games-hint {
+  font-size: 1rem;
+  color: var(--color-text-muted, var(--text-muted));
+  margin: -8px 0 20px;
+}
+
 .dash__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 20px;
+}
+
+.dash__grid--4x4 {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+@media (max-width: 1100px) {
+  .dash__grid--4x4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .dash__grid--4x4 {
+    grid-template-columns: 1fr;
+  }
 }
 
 .dash__game-card {

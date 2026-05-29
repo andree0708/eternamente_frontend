@@ -20,7 +20,8 @@ export function NavigationGame({ onComplete, onStatsChange }: Props) {
   const [moves, setMoves] = useState(0);
   const [errors, setErrors] = useState(0);
   const [finished, setFinished] = useState(false);
-  const [instructionsOpen, setInstructionsOpen] = useState(true);
+  const [started, setStarted] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [levelFlash, setLevelFlash] = useState(false);
   const savedRef = useRef(false);
 
@@ -40,8 +41,9 @@ export function NavigationGame({ onComplete, onStatsChange }: Props) {
   }, []);
 
   useEffect(() => {
+    if (!started) return;
     startLevel();
-  }, [level, startLevel]);
+  }, [level, started, startLevel]);
 
   useEffect(() => {
     onStatsChange?.([level, moves, errors]);
@@ -123,10 +125,14 @@ export function NavigationGame({ onComplete, onStatsChange }: Props) {
         title={meta.instructions.title}
         steps={meta.instructions.steps}
         accent={meta.accent}
-        collapsed={!instructionsOpen}
-        onToggle={() => setInstructionsOpen((o) => !o)}
+        started={started}
+        onStart={() => setStarted(true)}
+        helpOpen={helpOpen}
+        onToggleHelp={() => setHelpOpen((o) => !o)}
       />
 
+      {started && (
+        <>
       <div className="nav-game__header">
         <span>Nivel {level} / {MAX_LEVEL}</span>
         <span>Movimientos: {moves}</span>
@@ -159,6 +165,8 @@ export function NavigationGame({ onComplete, onStatsChange }: Props) {
       </div>
 
       <p className="nav-game__tip">También puedes usar las flechas del teclado ↑ ↓ ← →</p>
+        </>
+      )}
     </div>
   );
 }

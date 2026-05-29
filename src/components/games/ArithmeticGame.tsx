@@ -35,7 +35,8 @@ export function ArithmeticGame({ onComplete, onStatsChange }: Props) {
   const [reactionTimes, setReactionTimes] = useState<number[]>([]);
   const [timeLeft, setTimeLeft] = useState(settings.timeLimitSeconds);
   const [finished, setFinished] = useState(false);
-  const [instructionsOpen, setInstructionsOpen] = useState(true);
+  const [started, setStarted] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [flash, setFlash] = useState<'ok' | 'bad' | null>(null);
   const startRef = useRef(0);
   const savedRef = useRef(false);
@@ -47,12 +48,12 @@ export function ArithmeticGame({ onComplete, onStatsChange }: Props) {
   }, [settings.maxOperand, settings.timeLimitSeconds]);
 
   useEffect(() => {
-    if (instructionsOpen || finished) return;
+    if (!started || finished) return;
     nextProblem();
-  }, [round, instructionsOpen, finished, nextProblem]);
+  }, [round, started, finished, nextProblem]);
 
   useEffect(() => {
-    if (instructionsOpen || finished || round >= settings.rounds) return;
+    if (!started || finished || round >= settings.rounds) return;
     if (timeLeft <= 0) {
       setErrors((e) => e + 1);
       setRound((r) => r + 1);
@@ -60,7 +61,7 @@ export function ArithmeticGame({ onComplete, onStatsChange }: Props) {
     }
     const t = setTimeout(() => setTimeLeft((s) => s - 1), 1000);
     return () => clearTimeout(t);
-  }, [timeLeft, instructionsOpen, finished, round, settings.rounds]);
+  }, [timeLeft, started, finished, round, settings.rounds]);
 
   useEffect(() => {
     if (round < settings.rounds || finished) return;
@@ -108,12 +109,15 @@ export function ArithmeticGame({ onComplete, onStatsChange }: Props) {
   return (
     <div className={`arith-game ${flash ? `arith-game--${flash}` : ''}`}>
       <GameInstructions
-        open={instructionsOpen}
         title={meta.instructions.title}
         steps={meta.instructions.steps}
-        onStart={() => setInstructionsOpen(false)}
+        accent={meta.accent}
+        started={started}
+        onStart={() => setStarted(true)}
+        helpOpen={helpOpen}
+        onToggleHelp={() => setHelpOpen((o) => !o)}
       />
-      {!instructionsOpen && !finished && (
+      {started && !finished && (
         <>
           <p className="arith-game__meta">
             Pregunta {Math.min(round + 1, settings.rounds)} de {settings.rounds} · Tiempo: {timeLeft}s

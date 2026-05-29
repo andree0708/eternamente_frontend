@@ -26,9 +26,14 @@ export function useGameSession(gameType: GameType) {
     setSaving(true);
     setSaveMessage({ text: 'Guardando resultados...', type: 'info' });
     try {
+      const clean: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries({ ...metrics, gameType })) {
+        if (typeof v === 'number' && !Number.isFinite(v)) continue;
+        clean[k] = v;
+      }
       const saved = await api<SavedAssessment>('/api/assessments', 'POST', {
         age: 65,
-        metrics: { ...metrics, gameType },
+        metrics: clean,
       });
       setLastAssessmentId(saved.id);
       setSaveMessage({ text: '¡Partida guardada correctamente!', type: 'success' });

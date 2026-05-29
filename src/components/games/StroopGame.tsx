@@ -20,7 +20,7 @@ interface Props {
 
 export function StroopGame({ onComplete, onStatsChange }: Props) {
   const meta = GAME_META.stroop;
-  const { settings } = useGameConfig('stroop');
+  const { settings, loading } = useGameConfig('stroop');
   const ROUNDS = settings.rounds;
   const WORD_DISPLAY_MS = settings.wordDisplayMs;
   const [played, setPlayed] = useState(0);
@@ -34,7 +34,8 @@ export function StroopGame({ onComplete, onStatsChange }: Props) {
   const [stimulusKey, setStimulusKey] = useState(0);
   const [finished, setFinished] = useState(false);
   const [flash, setFlash] = useState<'ok' | 'bad' | null>(null);
-  const [instructionsOpen, setInstructionsOpen] = useState(true);
+  const [started, setStarted] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const startTimeRef = useRef(0);
   const stimulusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedRef = useRef(false);
@@ -64,13 +65,13 @@ export function StroopGame({ onComplete, onStatsChange }: Props) {
   }, [clearStimulusTimer, beginResponsePhase]);
 
   useEffect(() => {
-    if (instructionsOpen) return;
+    if (!started || loading || ROUNDS <= 0) return;
     const t = setTimeout(showRound, 400);
     return () => {
       clearTimeout(t);
       clearStimulusTimer();
     };
-  }, [instructionsOpen, showRound, clearStimulusTimer]);
+  }, [started, loading, ROUNDS, showRound, clearStimulusTimer]);
 
   useEffect(() => () => clearStimulusTimer(), [clearStimulusTimer]);
 
@@ -135,7 +136,7 @@ export function StroopGame({ onComplete, onStatsChange }: Props) {
     );
   }
 
-  const canAnswer = phase === 'response' && !instructionsOpen;
+  const canAnswer = phase === 'response' && started;
   const seconds = WORD_DISPLAY_MS / 1000;
 
   return (
@@ -145,11 +146,13 @@ export function StroopGame({ onComplete, onStatsChange }: Props) {
         steps={meta.instructions.steps}
         warning={meta.instructions.warning}
         accent={meta.accent}
-        collapsed={!instructionsOpen}
-        onToggle={() => setInstructionsOpen((o) => !o)}
+        started={started}
+        onStart={() => setStarted(true)}
+        helpOpen={helpOpen}
+        onToggleHelp={() => setHelpOpen((o) => !o)}
       />
 
-      {!instructionsOpen && (
+      {started && (
         <>
           <div className="stroop-game__progress">
             <div className="stroop-game__progress-bar" style={{ width: `${(played / ROUNDS) * 100}%` }} />

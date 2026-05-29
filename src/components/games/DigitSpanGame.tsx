@@ -21,7 +21,8 @@ export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
   const [correctCount, setCorrectCount] = useState(0);
   const [errors, setErrors] = useState(0);
   const [finished, setFinished] = useState(false);
-  const [instructionsOpen, setInstructionsOpen] = useState(true);
+  const [started, setStarted] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [showIndex, setShowIndex] = useState(0);
   const savedRef = useRef(false);
 
@@ -40,23 +41,23 @@ export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
   }, [length]);
 
   useEffect(() => {
-    if (instructionsOpen || finished) return;
+    if (!started || finished) return;
     startRound();
-  }, [level, instructionsOpen, finished, startRound]);
+  }, [level, started, finished, startRound]);
 
   useEffect(() => {
     onStatsChange?.([level, correctCount, errors]);
   }, [level, correctCount, errors, onStatsChange]);
 
   useEffect(() => {
-    if (phase !== 'show' || instructionsOpen || sequence.length === 0) return;
+    if (phase !== 'show' || !started || sequence.length === 0) return;
     if (showIndex >= sequence.length) {
       setPhase('input');
       return;
     }
     const t = setTimeout(() => setShowIndex((i) => i + 1), settings.displayMsPerDigit);
     return () => clearTimeout(t);
-  }, [phase, showIndex, sequence, settings.displayMsPerDigit, instructionsOpen]);
+  }, [phase, showIndex, sequence, settings.displayMsPerDigit, started]);
 
   const submitAnswer = () => {
     const expected = sequence.join('');
@@ -101,12 +102,15 @@ export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
   return (
     <div className="digit-game">
       <GameInstructions
-        open={instructionsOpen}
         title={meta.instructions.title}
         steps={meta.instructions.steps}
-        onStart={() => setInstructionsOpen(false)}
+        accent={meta.accent}
+        started={started}
+        onStart={() => setStarted(true)}
+        helpOpen={helpOpen}
+        onToggleHelp={() => setHelpOpen((o) => !o)}
       />
-      {!instructionsOpen && (
+      {started && (
         <>
           <p className="digit-game__level">Nivel {level} de {maxLevel}</p>
           {phase === 'show' && (

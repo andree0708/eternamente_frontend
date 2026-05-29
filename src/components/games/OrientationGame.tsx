@@ -72,12 +72,23 @@ interface Props {
 export function OrientationGame({ onComplete, onStatsChange }: Props) {
   const meta = GAME_META.orientation;
   const { settings } = useGameConfig('orientation');
-  const [questions] = useState(() => buildQuestions().slice(0, settings.questionsPerSession));
+  const [questions, setQuestions] = useState<Question[]>([]);
+
+  useEffect(() => {
+    if (!started) return;
+    setQuestions(buildQuestions().slice(0, settings.questionsPerSession || 5));
+    setIndex(0);
+    setCorrect(0);
+    setErrors(0);
+    setFinished(false);
+    savedRef.current = false;
+  }, [started, settings.questionsPerSession]);
   const [index, setIndex] = useState(0);
   const [correct, setCorrect] = useState(0);
   const [errors, setErrors] = useState(0);
   const [finished, setFinished] = useState(false);
-  const [instructionsOpen, setInstructionsOpen] = useState(true);
+  const [started, setStarted] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const savedRef = useRef(false);
 
   const q = questions[index];
@@ -115,12 +126,15 @@ export function OrientationGame({ onComplete, onStatsChange }: Props) {
   return (
     <div className="orient-game">
       <GameInstructions
-        open={instructionsOpen}
         title={meta.instructions.title}
         steps={meta.instructions.steps}
-        onStart={() => setInstructionsOpen(false)}
+        accent={meta.accent}
+        started={started}
+        onStart={() => setStarted(true)}
+        helpOpen={helpOpen}
+        onToggleHelp={() => setHelpOpen((o) => !o)}
       />
-      {!instructionsOpen && q && !finished && (
+      {started && q && !finished && (
         <>
           <p className="orient-game__progress">
             Pregunta {index + 1} de {questions.length}

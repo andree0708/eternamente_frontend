@@ -125,11 +125,13 @@ export function GamePage() {
 
           <div className="game-app__board">{gameElement}</div>
 
-          <div className="game-app__actions">
-            <button type="button" className="btn btn-primary" onClick={handleNewGame}>
-              Nueva partida
-            </button>
-          </div>
+          {session.gameCompleted && (
+            <div className="game-app__actions">
+              <button type="button" className="btn btn-primary" onClick={handleNewGame}>
+                Nueva partida
+              </button>
+            </div>
+          )}
         </section>
 
         <ResultsPanel

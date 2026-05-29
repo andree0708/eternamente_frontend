@@ -24,7 +24,8 @@ export function CorsiGame({ onComplete, onStatsChange }: Props) {
   const [correctCount, setCorrectCount] = useState(0);
   const [errors, setErrors] = useState(0);
   const [finished, setFinished] = useState(false);
-  const [instructionsOpen, setInstructionsOpen] = useState(true);
+  const [started, setStarted] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const savedRef = useRef(false);
 
   const seqLen = 2 + level;
@@ -56,9 +57,9 @@ export function CorsiGame({ onComplete, onStatsChange }: Props) {
   }, [seqLen, cellCount, playSequence]);
 
   useEffect(() => {
-    if (instructionsOpen || finished) return;
+    if (!started || finished) return;
     startRound();
-  }, [level, instructionsOpen, finished, startRound]);
+  }, [level, started, finished, startRound]);
 
   useEffect(() => {
     onStatsChange?.([level, correctCount, errors]);
@@ -101,12 +102,15 @@ export function CorsiGame({ onComplete, onStatsChange }: Props) {
   return (
     <div className="corsi-game">
       <GameInstructions
-        open={instructionsOpen}
         title={meta.instructions.title}
         steps={meta.instructions.steps}
-        onStart={() => setInstructionsOpen(false)}
+        accent={meta.accent}
+        started={started}
+        onStart={() => setStarted(true)}
+        helpOpen={helpOpen}
+        onToggleHelp={() => setHelpOpen((o) => !o)}
       />
-      {!instructionsOpen && (
+      {started && (
         <>
           <p className="corsi-game__level">Nivel {level} · {seqLen} casillas</p>
           <div

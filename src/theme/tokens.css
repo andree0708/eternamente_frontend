@@ -1,0 +1,42 @@
+/* EternaMente — tokens doc migración §8 */
+:root,
+[data-theme='light'] {
+  --color-primary: #1565c0;
+  --color-primary-light: #42a5f5;
+  --color-secondary: #2e7d32;
+  --color-background: #fafafa;
+  --color-surface: #ffffff;
+  --color-text: #1a202c;
+  --color-text-muted: #475569;
+  --color-border: #e2e8f0;
+  --color-accent: #c68b2a;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] {
+  --color-primary: #9ecaff;
+  --color-primary-light: #bbdefb;
+  --color-secondary: #85c983;
+  --color-background: #1a1c1e;
+  --color-surface: #25282c;
+  --color-text: #f1f5f9;
+  --color-text-muted: #94a3b8;
+  --color-border: #3d4450;
+  --color-accent: #e0a84b;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+[data-hc='true'][data-theme='light'] {
+  --color-background: #ffffff;
+  --color-text: #000000;
+  --color-border: #000000;
+}
+
+[data-hc='true'][data-theme='dark'] {
+  --color-background: #000000;
+  --color-surface: #0a0a0a;
+  --color-text: #ffffff;
+  --color-border: #ffffff;
+}
