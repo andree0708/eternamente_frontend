@@ -61,8 +61,11 @@ export function GamesDashboard() {
   };
 
   const catalog = getGameCatalog();
-  const maxSessions = Math.max(1, ...(analytics?.byGameType.map((g) => g.sessions) || [1]));
-  const riskPct = analytics ? Math.round(analytics.summary.avgRiskScore * 100) : 0;
+  const totalFromGames = analytics?.byGameType.reduce((s, g) => s + g.sessions, 0) || 0;
+  const totalSessions = Math.max(analytics?.summary.totalSessions || 0, totalFromGames);
+  const riskPct = totalSessions > 0
+    ? Math.round((analytics?.byGameType.reduce((sum, g) => sum + g.avgRiskScore * g.sessions, 0) / totalSessions) * 100)
+    : 0;
   const accuracyPct =
     analytics?.summary.avgAccuracy != null
       ? Math.round(analytics.summary.avgAccuracy * 100)
@@ -87,11 +90,11 @@ export function GamesDashboard() {
         <h2 id="analytics-title">Tu resumen</h2>
         {loading ? (
           <p className="dash__loading">Cargando analítica…</p>
-        ) : analytics && analytics.summary.totalSessions > 0 ? (
+        ) : analytics && totalSessions > 0 ? (
           <>
             <div className="dash__stats">
               <div className="dash__stat-card">
-                <span className="dash__stat-value">{analytics.summary.totalSessions}</span>
+                <span className="dash__stat-value">{totalSessions}</span>
                 <span className="dash__stat-label">Sesiones</span>
               </div>
               <div className="dash__stat-card">
