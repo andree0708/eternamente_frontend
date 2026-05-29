@@ -146,6 +146,7 @@ export function StroopGame({ onComplete, onStatsChange }: Props) {
           ]}
         onBack={() => { window.location.href = '/games'; }}
       />
+    </div>
     );
   }
 
