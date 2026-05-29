@@ -37,6 +37,11 @@ function buildQuestions(): Question[] {
   const hour = now.getHours();
   const timeOfDay = hour < 12 ? 'mañana' : hour < 18 ? 'tarde' : 'noche';
   const monthDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const yesterday = days[(now.getDay() + 6) % 7];
+  const tomorrow = days[(now.getDay() + 1) % 7];
+  const monthNum = now.getMonth() + 1;
+  const quarter = Math.floor(now.getMonth() / 3) + 1;
+  const isWeekend = now.getDay() === 0 || now.getDay() === 6;
 
   const all: Question[] = [
     {
@@ -96,9 +101,53 @@ function buildQuestions(): Question[] {
       options: shuffle(['mañana', 'tarde', 'noche']),
       answer: timeOfDay,
     },
+    {
+      id: 'yesterday',
+      prompt: '¿Ayer fue qué día de la semana?',
+      options: shuffle(days),
+      answer: yesterday,
+    },
+    {
+      id: 'tomorrow',
+      prompt: '¿Mañana será qué día de la semana?',
+      options: shuffle(days),
+      answer: tomorrow,
+    },
+    {
+      id: 'monthnum',
+      prompt: '¿Qué número de mes es? (ej: enero=1, febrero=2)',
+      options: shuffle([
+        String(monthNum),
+        String(Math.max(1, monthNum - 1)),
+        String(Math.min(12, monthNum + 1)),
+      ]),
+      answer: String(monthNum),
+    },
+    {
+      id: 'quarter',
+      prompt: '¿En qué trimestre del año estamos?',
+      options: shuffle(['1.er trimestre', '2.º trimestre', '3.er trimestre', '4.º trimestre']),
+      answer: `${quarter}.${quarter === 1 ? 'er' : 'º'} trimestre`,
+    },
+    {
+      id: 'weekend',
+      prompt: '¿Hoy es fin de semana o día entre semana?',
+      options: shuffle(['Fin de semana', 'Entre semana']),
+      answer: isWeekend ? 'Fin de semana' : 'Entre semana',
+    },
+    {
+      id: 'hour',
+      prompt: 'Aproximadamente, ¿qué hora es ahora?',
+      options: shuffle([
+        `${hour}:00`,
+        `${Math.max(0, hour - 1)}:00`,
+        `${Math.min(23, hour + 1)}:00`,
+      ]),
+      answer: `${hour}:00`,
+    },
   ];
 
-  return shuffle(all).slice(0, 5);
+  return shuffle(all).slice(0, 7);
 }
 
 interface Props {
@@ -119,7 +168,7 @@ export function OrientationGame({ onComplete, onStatsChange }: Props) {
   const [lastAnswer, setLastAnswer] = useState<'ok' | 'bad' | null>(null);
   const savedRef = useRef(false);
 
-  const count = settings.questionsPerSession || 5;
+  const count = settings.questionsPerSession || 7;
 
   useEffect(() => {
     if (!started) return;

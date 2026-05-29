@@ -297,8 +297,16 @@
 
 .digit-game__errors {
   text-align: center;
-  color: var(--error);
-  font-weight: 600;
+  color: #e53e3e;
+  font-size: 0.9rem;
+  margin-top: -8px;
+  margin-bottom: 12px;
+}
+
+.digit-game__watch-label {
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--text-muted);
   margin-bottom: 8px;
 }
 

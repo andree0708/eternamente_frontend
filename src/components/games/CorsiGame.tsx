@@ -74,6 +74,8 @@ export function CorsiGame({ onComplete, onStatsChange }: Props) {
 
   const tapCell = (idx: number) => {
     if (phase !== 'repeat' || finished) return;
+    setActiveCell(idx);
+    setTimeout(() => setActiveCell(null), 250);
     const next = [...playerSeq, idx];
     setPlayerSeq(next);
     const expected = sequence[next.length - 1];

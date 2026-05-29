@@ -14,7 +14,7 @@ interface Props {
 
 export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
   const meta = GAME_META.digitspan;
-  const { settings } = useGameConfig('digitspan');
+  const { settings, loading } = useGameConfig('digitspan');
   const [level, setLevel] = useState(1);
   const [sequence, setSequence] = useState<number[]>([]);
   const [input, setInput] = useState('');
@@ -28,8 +28,10 @@ export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
   const [feedbackOk, setFeedbackOk] = useState<boolean | null>(null);
   const savedRef = useRef(false);
 
-  const length = settings.sequenceStart + level - 1;
-  const maxLevel = settings.maxLevel;
+  const sequenceStart = settings.sequenceStart || 3;
+  const maxLevel = settings.maxLevel || 5;
+  const displayMs = settings.displayMsPerDigit || 600;
+  const length = sequenceStart + level - 1;
 
   const startRound = useCallback(() => {
     const seq: number[] = [];
@@ -44,9 +46,9 @@ export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
   }, [length]);
 
   useEffect(() => {
-    if (!started || finished) return;
+    if (!started || finished || loading) return;
     startRound();
-  }, [level, started, finished, startRound]);
+  }, [level, started, finished, startRound, loading]);
 
   useEffect(() => {
     onStatsChange?.([level, correctCount, errors]);
@@ -58,9 +60,9 @@ export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
       setPhase('input');
       return;
     }
-    const t = setTimeout(() => setShowIndex((i) => i + 1), settings.displayMsPerDigit);
+    const t = setTimeout(() => setShowIndex((i) => i + 1), displayMs);
     return () => clearTimeout(t);
-  }, [phase, showIndex, sequence, settings.displayMsPerDigit, started]);
+  }, [phase, showIndex, sequence, displayMs, started]);
 
   const submitAnswer = () => {
     const expected = sequence.join('');
@@ -151,23 +153,27 @@ export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
             <p className="digit-game__errors" role="status">Errores acumulados: {errors}</p>
           )}
           {phase === 'show' && (
-            <div className="digit-game__display" aria-live="polite">
-              {showIndex < sequence.length ? (
-                <div className="digit-game__sequence">
-                  {sequence.slice(0, showIndex + 1).map((d, i) => (
-                    <span key={i} className="digit-game__digit">
-                      <span className="digit-game__pos">{i + 1}.</span>
-                      <span className="digit-game__val">{d}</span>
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <span className="digit-game__hint">Tu turno — escribe la secuencia</span>
-              )}
-            </div>
+            <>
+              <p className="digit-game__watch-label">Observa la secuencia…</p>
+              <div className="digit-game__display" aria-live="polite">
+                {showIndex < sequence.length ? (
+                  <div className="digit-game__sequence">
+                    {sequence.slice(0, showIndex + 1).map((d, i) => (
+                      <span key={i} className="digit-game__digit">
+                        <span className="digit-game__pos">{i + 1}.</span>
+                        <span className="digit-game__val">{d}</span>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="digit-game__hint">Tu turno — escribe la secuencia</span>
+                )}
+              </div>
+            </>
           )}
           {phase === 'input' && (
             <>
+              <p className="digit-game__watch-label">Repite la secuencia</p>
               <div className="digit-game__input">{input || '—'}</div>
               <div className="digit-game__pad">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (

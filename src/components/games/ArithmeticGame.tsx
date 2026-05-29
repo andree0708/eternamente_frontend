@@ -28,44 +28,49 @@ function makeProblem(maxOperand: number) {
 
 export function ArithmeticGame({ onComplete, onStatsChange }: Props) {
   const meta = GAME_META.arithmetic;
-  const { settings } = useGameConfig('arithmetic');
+  const { settings, loading } = useGameConfig('arithmetic');
   const [round, setRound] = useState(0);
-  const [problem, setProblem] = useState(() => makeProblem(settings.maxOperand));
+  const [problem, setProblem] = useState(() => makeProblem(settings.maxOperand || 20));
   const [correct, setCorrect] = useState(0);
   const [errors, setErrors] = useState(0);
   const [reactionTimes, setReactionTimes] = useState<number[]>([]);
-  const [timeLeft, setTimeLeft] = useState(settings.timeLimitSeconds);
+  const [timeLeft, setTimeLeft] = useState(settings.timeLimitSeconds || 8);
   const [finished, setFinished] = useState(false);
   const [started, setStarted] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [flash, setFlash] = useState<'ok' | 'bad' | null>(null);
   const startRef = useRef(0);
   const savedRef = useRef(false);
+  const expiredRef = useRef(false);
 
   const nextProblem = useCallback(() => {
-    setProblem(makeProblem(settings.maxOperand));
-    setTimeLeft(settings.timeLimitSeconds);
+    setProblem(makeProblem(settings.maxOperand || 20));
+    setTimeLeft(settings.timeLimitSeconds || 8);
     startRef.current = performance.now();
   }, [settings.maxOperand, settings.timeLimitSeconds]);
 
   useEffect(() => {
-    if (!started || finished) return;
+    if (!started || finished || loading) return;
     nextProblem();
-  }, [round, started, finished, nextProblem]);
+  }, [round, started, finished, nextProblem, loading]);
 
   useEffect(() => {
-    if (!started || finished || round >= settings.rounds) return;
-    if (timeLeft <= 0) {
+    if (!started || finished || round >= (settings.rounds || 15)) return;
+    const tl = timeLeft;
+    if (tl <= 0 || Number.isNaN(tl)) {
+      if (expiredRef.current) return;
+      expiredRef.current = true;
       setErrors((e) => e + 1);
       setRound((r) => r + 1);
       return;
     }
+    expiredRef.current = false;
     const t = setTimeout(() => setTimeLeft((s) => s - 1), 1000);
     return () => clearTimeout(t);
   }, [timeLeft, started, finished, round, settings.rounds]);
 
   useEffect(() => {
-    if (round < settings.rounds || finished) return;
+    if (round < (settings.rounds || 15) || finished) return;
     setFinished(true);
   }, [round, settings.rounds, finished]);
 
@@ -93,6 +98,7 @@ export function ArithmeticGame({ onComplete, onStatsChange }: Props) {
   useEffect(() => {
     if (!finished || savedRef.current) return;
     savedRef.current = true;
+    const totalRounds = settings.rounds || 15;
     const avg =
       reactionTimes.length > 0
         ? reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length
@@ -100,16 +106,17 @@ export function ArithmeticGame({ onComplete, onStatsChange }: Props) {
     const score = calcScore('arithmetic', { correct, errors });
     onComplete({
       gameType: 'arithmetic',
-      totalRounds: settings.rounds,
+      totalRounds,
       correct,
       errors,
-      accuracy: Number((correct / settings.rounds).toFixed(4)),
+      accuracy: Number((correct / totalRounds).toFixed(4)),
       averageReactionTimeMs: Number(avg.toFixed(2)),
       score,
     });
   }, [finished, correct, errors, reactionTimes, settings.rounds, onComplete]);
 
   if (finished) {
+    const totalRounds = settings.rounds || 15;
     const avg = Math.round(
       reactionTimes.length > 0
         ? reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length
@@ -120,7 +127,7 @@ export function ArithmeticGame({ onComplete, onStatsChange }: Props) {
       <div className="arith-game">
         <GameCompleteBanner
           stats={[
-            { label: 'Aciertos', value: `${correct}/${settings.rounds}` },
+            { label: 'Aciertos', value: `${correct}/${totalRounds}` },
             { label: 'Errores', value: String(errors) },
             { label: 'Tiempo medio', value: `${avg} ms` },
             { label: 'Puntuación', value: String(score) },
@@ -144,7 +151,7 @@ export function ArithmeticGame({ onComplete, onStatsChange }: Props) {
       {started && (
         <>
           <p className="arith-game__meta">
-            Pregunta {Math.min(round + 1, settings.rounds)} de {settings.rounds} · Tiempo: {timeLeft}s
+            Pregunta {Math.min(round + 1, settings.rounds || 15)} de {settings.rounds || 15} · Tiempo: {timeLeft}s
           </p>
           <div className="arith-game__expr">{problem.label} = ?</div>
           <div className="arith-game__options">
