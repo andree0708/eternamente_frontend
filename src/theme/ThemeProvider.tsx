@@ -34,6 +34,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.setAttribute('data-hc', highContrast ? 'true' : 'false');
     document.documentElement.style.setProperty('--font-scale', String(fontScale));
+    document.documentElement.style.fontSize = `calc(1rem * ${fontScale})`;
     localStorage.setItem(STORAGE_KEY, theme);
     localStorage.setItem(HC_KEY, highContrast ? '1' : '0');
     localStorage.setItem(FONT_KEY, String(fontScale));

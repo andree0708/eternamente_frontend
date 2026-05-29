@@ -387,19 +387,18 @@
 
 .memory-game__board {
   display: grid;
-  gap: clamp(4px, 1vw, 8px);
+  gap: clamp(2px, 0.6vw, 6px);
   width: 100%;
-  max-width: 520px;
+  max-width: 480px;
   margin: 0 auto;
 }
 
 .memory-game__card {
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
   background: transparent;
   padding: 0;
-  min-height: 0;
 }
 
 .memory-game__card-inner {
@@ -407,14 +406,14 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding-bottom: 100%;
+  padding-bottom: 75%;
   position: relative;
-  font-size: clamp(14px, 2.8vw, 22px);
-  border-radius: 10px;
+  font-size: clamp(12px, 2.2vw, 20px);
+  border-radius: 8px;
   background: linear-gradient(145deg, #5a67d8, #7c3aed);
   color: #fff;
-  box-shadow: 0 4px 12px rgba(90, 103, 216, 0.3);
-  transition: transform 0.25s ease, background 0.25s;
+  box-shadow: 0 2px 8px rgba(90, 103, 216, 0.25);
+  transition: transform 0.2s ease, background 0.2s;
 }
 
 .memory-game__card-inner > * {
@@ -425,7 +424,7 @@
 }
 
 .memory-game__card:hover:not(:disabled) .memory-game__card-inner {
-  transform: translateY(-2px) scale(1.03);
+  transform: translateY(-1px) scale(1.02);
 }
 
 .memory-game__card.revealed .memory-game__card-inner,
@@ -434,7 +433,11 @@
 }
 
 .memory-game__card.matched .memory-game__card-inner {
-  opacity: 0.85;
+  opacity: 0.8;
+}
+
+.memory-game__card:disabled {
+  cursor: default;
 }
 
 /* Stroop */

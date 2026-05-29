@@ -37,6 +37,7 @@ export function StroopGame({ onComplete, onStatsChange }: Props) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const savedRef = useRef(false);
   const finishedRef = useRef(false);
+  const roundAnsweredRef = useRef(false);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
@@ -44,6 +45,7 @@ export function StroopGame({ onComplete, onStatsChange }: Props) {
 
   const showRound = useCallback(() => {
     clearTimer();
+    roundAnsweredRef.current = false;
     const wordIdx = Math.floor(Math.random() * COLORS.length);
     const inkIdx = Math.floor(Math.random() * COLORS.length);
     setWord(COLORS[wordIdx].name.toUpperCase());
@@ -55,13 +57,15 @@ export function StroopGame({ onComplete, onStatsChange }: Props) {
       setTimeLeft((t) => {
         if (t <= 1) {
           clearTimer();
-          setErrors((e) => e + 1);
-          const next = played + 1;
-          if (next >= ROUNDS) {
-            finishedRef.current = true;
-            setFinished(true);
-          } else {
-            setTimeout(showRound, 300);
+          if (!roundAnsweredRef.current) {
+            setErrors((e) => e + 1);
+            const next = played + 1;
+            if (next >= ROUNDS) {
+              finishedRef.current = true;
+              setFinished(true);
+            } else {
+              setTimeout(showRound, 300);
+            }
           }
           return 0;
         }
@@ -108,7 +112,8 @@ export function StroopGame({ onComplete, onStatsChange }: Props) {
   }, [correct, errors, reactionTimes, onStatsChange]);
 
   const answer = (colorName: string) => {
-    if (finishedRef.current || played >= ROUNDS) return;
+    if (finishedRef.current || played >= ROUNDS || roundAnsweredRef.current) return;
+    roundAnsweredRef.current = true;
     const rt = performance.now() - startTimeRef.current;
     setReactionTimes((r) => [...r, rt]);
     const isCorrect = colorName === inkName;

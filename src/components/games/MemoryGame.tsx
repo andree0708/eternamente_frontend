@@ -43,10 +43,10 @@ interface Props {
 export function MemoryGame({ onComplete, onStatsChange }: Props) {
   const meta = GAME_META.memory;
   const { settings } = useGameConfig('memory');
-  const DIFFICULTY_CONFIG: Record<Difficulty, { pairs: number; cols: number; label: string }> = {
-    EASY: { pairs: settings.pairsEasy, cols: settings.colsEasy, label: `Fácil (${settings.pairsEasy} pares)` },
-    MEDIUM: { pairs: settings.pairsMedium, cols: settings.colsMedium, label: `Medio (${settings.pairsMedium} pares)` },
-    HARD: { pairs: settings.pairsHard, cols: settings.colsHard, label: `Difícil (${settings.pairsHard} pares)` },
+  const DIFFICULTY_CONFIG: Record<Difficulty, { pairs: number; cols: number; rows: number; label: string }> = {
+    EASY: { pairs: settings.pairsEasy, cols: settings.colsEasy, rows: Math.ceil(settings.pairsEasy * 2 / settings.colsEasy), label: `Fácil (${settings.pairsEasy} pares)` },
+    MEDIUM: { pairs: settings.pairsMedium, cols: settings.colsMedium, rows: Math.ceil(settings.pairsMedium * 2 / settings.colsMedium), label: `Medio (${settings.pairsMedium} pares)` },
+    HARD: { pairs: settings.pairsHard, cols: settings.colsHard, rows: Math.ceil(settings.pairsHard * 2 / settings.colsHard), label: `Difícil (${settings.pairsHard} pares)` },
   };
   const [difficulty, setDifficulty] = useState<Difficulty>('EASY');
   const config = DIFFICULTY_CONFIG[difficulty];
@@ -237,9 +237,9 @@ export function MemoryGame({ onComplete, onStatsChange }: Props) {
         className="memory-game__board"
         style={{
           gridTemplateColumns: `repeat(${config.cols}, 1fr)`,
-          gridTemplateRows: `repeat(${Math.ceil((config.pairs * 2) / config.cols)}, 1fr)`,
+          gridTemplateRows: `repeat(${config.rows}, 1fr)`,
           ['--memory-cols' as string]: config.cols,
-          ['--memory-rows' as string]: Math.ceil((config.pairs * 2) / config.cols),
+          ['--memory-rows' as string]: config.rows,
         }}
       >
         {cards.map((card, index) => (
