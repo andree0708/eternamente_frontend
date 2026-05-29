@@ -63,8 +63,9 @@ export function GamesDashboard() {
   const catalog = getGameCatalog();
   const totalFromGames = analytics?.byGameType.reduce((s, g) => s + g.sessions, 0) || 0;
   const totalSessions = Math.max(analytics?.summary.totalSessions || 0, totalFromGames);
+  const maxSessions = Math.max(1, ...(analytics?.byGameType.map((g) => g.sessions) || [1]));
   const riskPct = totalSessions > 0
-    ? Math.round((analytics?.byGameType.reduce((sum, g) => sum + g.avgRiskScore * g.sessions, 0) / totalSessions) * 100)
+    ? Math.round(((analytics?.byGameType.reduce((sum, g) => sum + g.avgRiskScore * g.sessions, 0) || 0) / totalSessions) * 100)
     : 0;
   const accuracyPct =
     analytics?.summary.avgAccuracy != null
