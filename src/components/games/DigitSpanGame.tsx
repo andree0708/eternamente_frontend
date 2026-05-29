@@ -96,6 +96,18 @@ export function DigitSpanGame({ onComplete, onStatsChange }: Props) {
     });
   }, [finished, correctCount, errors, level, maxLevel, onComplete]);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (phase !== 'input' || finished) return;
+      if (e.key >= '1' && e.key <= '9') { appendDigit(e.key); return; }
+      if (e.key === '0') { appendDigit('0'); return; }
+      if (e.key === 'Backspace') { setInput((v) => v.slice(0, -1)); return; }
+      if (e.key === 'Enter') { submitAnswer(); return; }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
   const appendDigit = (d: string) => {
     if (phase !== 'input' || input.length >= length) return;
     setInput((v) => v + d);

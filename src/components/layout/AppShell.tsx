@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTheme } from '../../theme/ThemeProvider';
 import '../../styles/shell.css';
 
@@ -16,13 +16,23 @@ const NAV = [
 
 export function AppShell({ children, active }: Props) {
   const { theme, toggleTheme, highContrast, toggleHighContrast, fontScale, setFontScale } = useTheme();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <div className="shell">
+    <div className={`shell ${sidebarOpen ? 'shell--open' : 'shell--closed'}`}>
+      <button
+        type="button"
+        className="shell__toggle"
+        onClick={() => setSidebarOpen((o) => !o)}
+        aria-label={sidebarOpen ? 'Cerrar menú' : 'Abrir menú'}
+      >
+        {sidebarOpen ? '◀' : '▶'}
+      </button>
+
       <aside className="shell__sidebar" aria-label="Menú principal">
         <div className="shell__brand">
-          <img src="/logo.svg" alt="EternaMente" width={56} height={56} />
-          <span>EternaMente</span>
+          <img src="/logo.svg" alt="EternaMente" width={40} height={40} />
+          <span className="shell__brand-text">EternaMente</span>
         </div>
         <nav className="shell__nav">
           {NAV.map((item) => (
@@ -32,14 +42,30 @@ export function AppShell({ children, active }: Props) {
               className={`shell__nav-link ${active === item.id ? 'shell__nav-link--active' : ''}`}
             >
               <span aria-hidden>{item.icon}</span>
-              {item.label}
+              <span className="shell__nav-label">{item.label}</span>
             </a>
           ))}
         </nav>
         <div className="shell__sidebar-footer">
           <button type="button" className="shell__theme-btn" onClick={toggleTheme}>
-            {theme === 'light' ? '🌙 Modo oscuro' : '☀️ Modo claro'}
+            {theme === 'light' ? '🌙' : '☀️'}
+            <span className="shell__nav-label">{theme === 'light' ? 'Modo oscuro' : 'Modo claro'}</span>
           </button>
+          <div className="shell__acc-options">
+            <label className="shell__acc-row">
+              <input type="checkbox" checked={highContrast} onChange={toggleHighContrast} />
+              <span className="shell__nav-label">Alto contraste</span>
+            </label>
+            <label className="shell__acc-row">
+              <span className="shell__nav-label">Texto</span>
+              <select value={fontScale} onChange={(e) => setFontScale(parseFloat(e.target.value))}>
+                <option value={0.85}>Pequeño</option>
+                <option value={1}>Normal</option>
+                <option value={1.15}>Grande</option>
+                <option value={1.3}>Muy grande</option>
+              </select>
+            </label>
+          </div>
         </div>
       </aside>
 
@@ -48,28 +74,6 @@ export function AppShell({ children, active }: Props) {
           <h1 className="shell__page-title">Evaluación cognitiva</h1>
         </header>
         <div className="shell__content">{children}</div>
-
-        {active === 'home' && (
-          <section id="ajustes" className="shell__settings">
-            <h2>Ajustes de accesibilidad</h2>
-            <label className="shell__setting">
-              <input type="checkbox" checked={highContrast} onChange={toggleHighContrast} />
-              Alto contraste
-            </label>
-            <label className="shell__setting">
-              Tamaño de texto
-              <select
-                value={fontScale}
-                onChange={(e) => setFontScale(parseFloat(e.target.value))}
-              >
-                <option value={0.85}>Normal pequeño</option>
-                <option value={1}>Normal</option>
-                <option value={1.15}>Grande</option>
-                <option value={1.3}>Muy grande</option>
-              </select>
-            </label>
-          </section>
-        )}
       </div>
     </div>
   );

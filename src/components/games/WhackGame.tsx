@@ -30,10 +30,12 @@ export function WhackGame({ onComplete, onStatsChange }: Props) {
   const startRef = useRef(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const savedRef = useRef(false);
+  const finishedRef = useRef(false);
 
   useEffect(() => {
     if (played < ROUNDS || finished || savedRef.current) return;
     savedRef.current = true;
+    finishedRef.current = true;
     setFinished(true);
     const avg =
       reactionTimes.length > 0
@@ -51,7 +53,7 @@ export function WhackGame({ onComplete, onStatsChange }: Props) {
   }, [played, finished, correct, errors, falsePositives, reactionTimes, onComplete]);
 
   const nextRound = useCallback(() => {
-    if (played >= ROUNDS) return;
+    if (finishedRef.current || played >= ROUNDS) return;
     const idle = Array(GRID * GRID).fill('idle') as CellState[];
     const targetIdx = Math.floor(Math.random() * idle.length);
     let distractorIdx: number | null = null;
@@ -68,7 +70,7 @@ export function WhackGame({ onComplete, onStatsChange }: Props) {
 
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
-      if (targetRef.current === targetIdx) {
+      if (!finishedRef.current && targetRef.current === targetIdx) {
         targetRef.current = null;
         setErrors((e) => e + 1);
         setPlayed((p) => p + 1);
@@ -96,7 +98,7 @@ export function WhackGame({ onComplete, onStatsChange }: Props) {
   }, [correct, errors, reactionTimes, onStatsChange]);
 
   const handleCell = (index: number) => {
-    if (finished) return;
+    if (finishedRef.current) return;
     const state = cells[index];
     if (state !== 'target' && state !== 'distractor') return;
 

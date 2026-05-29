@@ -23,10 +23,14 @@ function buildQuestions(): Question[] {
   const dayName = days[now.getDay()];
   const year = String(now.getFullYear());
   const season = seasons[Math.floor(now.getMonth() / 3)];
+  const dayNum = now.getDate();
+  const hour = now.getHours();
+  const timeOfDay = hour < 12 ? 'mañana' : hour < 18 ? 'tarde' : 'noche';
+  const monthDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
 
   const shuffle = <T,>(arr: T[]) => [...arr].sort(() => Math.random() - 0.5);
 
-  return [
+  const all: Question[] = [
     {
       id: 'day',
       prompt: '¿Qué día de la semana es hoy?',
@@ -47,21 +51,45 @@ function buildQuestions(): Question[] {
     },
     {
       id: 'season',
-      prompt: '¿Qué estación del año corresponde aproximadamente ahora?',
+      prompt: '¿Qué estación del año es ahora?',
       options: shuffle(seasons),
       answer: season,
     },
     {
       id: 'date',
-      prompt: `¿Cuál es la fecha de hoy? (${now.getDate()} de ${month})`,
+      prompt: `¿Cuál es la fecha de hoy? (${dayNum} de ${month})`,
       options: shuffle([
-        `${now.getDate()} de ${month}`,
-        `${now.getDate() + 1} de ${month}`,
-        `${Math.max(1, now.getDate() - 1)} de ${month}`,
+        `${dayNum} de ${month}`,
+        `${Math.min(monthDays, dayNum + 1)} de ${month}`,
+        `${Math.max(1, dayNum - 1)} de ${month}`,
       ]),
-      answer: `${now.getDate()} de ${month}`,
+      answer: `${dayNum} de ${month}`,
+    },
+    {
+      id: 'daynum',
+      prompt: '¿Qué número de día del mes es hoy?',
+      options: shuffle([
+        String(dayNum),
+        String(Math.min(monthDays, dayNum + 5)),
+        String(Math.max(1, dayNum - 3)),
+      ]),
+      answer: String(dayNum),
+    },
+    {
+      id: 'daysleft',
+      prompt: '¿Cuántos días tiene este mes?',
+      options: shuffle([String(monthDays), String(monthDays - 1), String(monthDays + 1)]),
+      answer: String(monthDays),
+    },
+    {
+      id: 'timeofday',
+      prompt: 'En este momento, ¿es mañana, tarde o noche?',
+      options: shuffle(['mañana', 'tarde', 'noche']),
+      answer: timeOfDay,
     },
   ];
+
+  return shuffle(all).slice(0, 5);
 }
 
 interface Props {
